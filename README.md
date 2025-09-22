@@ -204,23 +204,8 @@ else
 end
 ```
 
-## Usage Examples
-
-**Basic usage:**
-```ruby
-# Access secrets
-Rails.application.secrets.api_key
-Rails.application.secrets.database.host
-Rails.application.secrets.oauth.google.client_id
-
-# With YAML defaults, you get deep merging:
-Rails.application.secrets.database.adapter  # "postgresql" (from default)
-Rails.application.secrets.database.host     # "localhost" (from environment)
-```
-
 ## Security Best Practices
 
-### ⚠️ Production Security
 - **Never commit production secrets** to version control
 - **Use environment variables** in production with ERB: `<%= ENV['SECRET'] %>`
 - **Use ENV.fetch()** with fallbacks: `<%= ENV.fetch('SECRET', 'default') %>`
