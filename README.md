@@ -102,6 +102,14 @@ Rails::Secrets.load                        # ✅ Load default config/secrets.yml
 Rails::Secrets.parse(['custom.yml'], env: Rails.env)  # ✅ Parse custom files
 ```
 
+**Check if Secvault is active:**
+```ruby
+if Secvault.active?
+  puts "Using Secvault for secrets management"
+else
+  puts "Using default Rails secrets functionality"
+end
+```
 
 ## Security
 

@@ -58,6 +58,11 @@ module Secvault
 
   extend self
 
+  # Check if Secvault is currently active in the Rails application
+  def active?
+    defined?(Rails) && Rails::Secrets == Secvault::RailsSecrets
+  end
+
   def install!
     return if defined?(Rails::Railtie).nil?
 
