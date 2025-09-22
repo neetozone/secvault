@@ -86,31 +86,27 @@ production:
 
 ## Multi-File Configuration
 
-Organize secrets across multiple files for better maintainability:
+Organize secrets across multiple files with a **super clean API**:
 
 ```ruby
 # config/initializers/secvault.rb
 require "secvault"
-Secvault.setup_backward_compatibility_with_older_rails!
 
-Rails.application.config.after_initialize do
-  # Load multiple files in order (later files override earlier ones)
-  secrets_files = [
-    Rails.root.join('config', 'secrets.yml'),         # Base secrets
-    Rails.root.join('config', 'secrets.oauth.yml'),   # OAuth & APIs
-    Rails.root.join('config', 'secrets.local.yml')    # Local overrides
-  ]
-  
-  existing_files = secrets_files.select(&:exist?)
-  
-  if existing_files.any?
-    merged_secrets = Rails::Secrets.parse(existing_files, env: Rails.env)
-    secrets_object = ActiveSupport::OrderedOptions.new
-    secrets_object.merge!(merged_secrets)
-    Rails.application.define_singleton_method(:secrets) { secrets_object }
-  end
-end
+# That's it! Just pass your files array
+Secvault.setup_multi_file!([
+  'config/secrets.yml',         # Base secrets
+  'config/secrets.oauth.yml',   # OAuth & APIs
+  'config/secrets.local.yml'    # Local overrides
+])
 ```
+
+**What this does automatically:**
+- ✅ Sets up Rails 7.1 compatibility (calls `setup_backward_compatibility_with_older_rails!`)
+- ✅ Loads and merges all files in order (later files override earlier ones)
+- ✅ Handles missing files gracefully
+- ✅ Adds `reload_secrets!` method in development
+- ✅ Provides logging (except in production)
+- ✅ Creates Rails.application.secrets with merged configuration
 
 **File organization example:**
 ```
@@ -118,6 +114,18 @@ config/
 ├── secrets.yml           # Base application secrets
 ├── secrets.oauth.yml     # OAuth providers & external APIs
 ├── secrets.local.yml     # Local development overrides (gitignored)
+```
+
+**Advanced options:**
+```ruby
+# Disable reload helper or logging
+Secvault.setup_multi_file!(files, reload_method: false, logger: false)
+
+# Use Pathname objects if needed
+Secvault.setup_multi_file!([
+  Rails.root.join('config', 'secrets.yml'),
+  Rails.root.join('config', 'secrets.oauth.yml')
+])
 ```
 
 ## Advanced Usage
@@ -175,10 +183,14 @@ production:
 
 ## Development Tools
 
-**Hot-reload secrets (development only):**
+**Hot-reload secrets (automatically available in development):**
 ```ruby
-# In Rails console or code
-reload_secrets!  # Reloads all secrets files without server restart
+# In Rails console - automatically added by setup_multi_file!
+reload_secrets!  # Reloads all configured files without server restart
+# 🔄 Reloaded secrets from 3 files
+
+# Also available as:
+Rails.application.reload_secrets!
 ```
 
 **Check integration status:**

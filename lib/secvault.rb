@@ -115,8 +115,87 @@ module Secvault
     end
   end
   
-  # Backward compatibility alias
+  # Set up multi-file secrets loading with a clean API
+  # Just pass an array of file paths and Secvault handles the rest
+  #
+  # Usage in an initializer:
+  #   Secvault.setup_multi_file!([
+  #     'config/secrets.yml',
+  #     'config/secrets.oauth.yml', 
+  #     'config/secrets.local.yml'
+  #   ])
+  #
+  # Options:
+  #   - files: Array of file paths (String or Pathname)
+  #   - reload_method: Add a reload helper method (default: true in development)
+  #   - logger: Enable/disable logging (default: true except in production)
+  def setup_multi_file!(files, reload_method: Rails.env.development?, logger: !Rails.env.production?)
+    # Ensure Secvault integration is active
+    setup_backward_compatibility_with_older_rails! unless active?
+    
+    # Convert strings to Pathname objects and resolve relative to Rails.root
+    file_paths = Array(files).map do |file|
+      file.is_a?(Pathname) ? file : Rails.root.join(file)
+    end
+    
+    # Set up the multi-file loading
+    Rails.application.config.after_initialize do
+      load_multi_file_secrets!(file_paths, logger: logger)
+    end
+    
+    # Add reload helper in development
+    if reload_method
+      add_reload_helper!(file_paths)
+    end
+  end
+  
+  # Load secrets from multiple files and merge them
+  def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?)
+    existing_files = file_paths.select(&:exist?)
+    
+    if existing_files.any?
+      # Load and merge all secrets files
+      merged_secrets = Rails::Secrets.parse(existing_files, env: Rails.env)
+      
+      # Create ActiveSupport::OrderedOptions object for Rails compatibility
+      secrets_object = ActiveSupport::OrderedOptions.new
+      secrets_object.merge!(merged_secrets)
+      
+      # Replace Rails.application.secrets
+      Rails.application.define_singleton_method(:secrets) { secrets_object }
+      
+      # Log successful loading
+      if logger
+        file_names = existing_files.map(&:basename)
+        Rails.logger&.info "[Secvault Multi-File] Loaded #{existing_files.size} files: #{file_names.join(', ')}"
+        Rails.logger&.info "[Secvault Multi-File] Merged #{merged_secrets.keys.size} secret keys for #{Rails.env}"
+      end
+      
+      merged_secrets
+    else
+      Rails.logger&.warn "[Secvault Multi-File] No secrets files found" if logger
+      {}
+    end
+  end
+  
+  # Add reload helper method for development
+  def add_reload_helper!(file_paths)
+    # Define reload method on Rails.application
+    Rails.application.define_singleton_method(:reload_secrets!) do
+      Secvault.load_multi_file_secrets!(file_paths, logger: true)
+      puts "🔄 Reloaded secrets from #{file_paths.size} files"
+      true
+    end
+    
+    # Also make it available as a top-level method
+    Object.define_method(:reload_secrets!) do
+      Rails.application.reload_secrets!
+    end
+  end
+  
+  # Backward compatibility aliases
   alias_method :setup_rails_71_integration!, :setup_backward_compatibility_with_older_rails!
+  alias_method :setup_multi_files!, :setup_multi_file!  # Alternative name
 end
 
 Secvault.install! if defined?(Rails)
