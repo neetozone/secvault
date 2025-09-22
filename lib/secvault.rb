@@ -65,18 +65,18 @@ module Secvault
     require "secvault/rails_secrets"
   end
   
-  # Helper method to set up Secvault for Rails 7.1 applications
-  # This provides an easy way to integrate Secvault into Rails 7.1 apps
-  # that still have native Rails::Secrets functionality.
+  # Helper method to set up Secvault for older Rails versions
+  # This provides an easy way to integrate Secvault into older Rails apps
+  # that still have native Rails::Secrets functionality (like Rails 7.1).
   #
   # Usage in an initializer:
-  #   Secvault.setup_rails_71_integration!
+  #   Secvault.setup_backward_compatibility_with_older_rails!
   #
   # This will:
   # 1. Override native Rails::Secrets with Secvault implementation
   # 2. Replace Rails.application.secrets with Secvault-powered functionality
   # 3. Load secrets from config/secrets.yml automatically
-  def setup_rails_71_integration!
+  def setup_backward_compatibility_with_older_rails!
     # Override native Rails::Secrets
     if defined?(Rails::Secrets)
       Rails.send(:remove_const, :Secrets)
@@ -109,6 +109,9 @@ module Secvault
       end
     end
   end
+  
+  # Backward compatibility alias
+  alias_method :setup_rails_71_integration!, :setup_backward_compatibility_with_older_rails!
 end
 
 Secvault.install! if defined?(Rails)

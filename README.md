@@ -3,7 +3,7 @@
 Restores the classic Rails `secrets.yml` functionality that was removed in Rails 7.2. Uses simple, plain YAML files for environment-specific secrets management.
 
 **Rails Version Support:**
-- **Rails 7.1**: Manual setup (see Rails 7.1 Integration below)
+- **Rails 7.1 and older**: Manual setup (see Older Rails Integration below)
 - **Rails 7.2+**: Automatic setup
 - **Rails 8.0+**: Full compatibility
 
@@ -84,13 +84,13 @@ all_secrets = Rails::Secrets.parse([
 ], env: Rails.env)
 ```
 
-## Rails 7.1 Integration
+## Older Rails Integration
 
-Test Secvault in Rails 7.1 before upgrading to 7.2+:
+For Rails versions with existing secrets functionality (like Rails 7.1), use Secvault to test before upgrading:
 
 ```ruby
 # config/initializers/secvault.rb
-Secvault.setup_rails_71_integration!
+Secvault.setup_backward_compatibility_with_older_rails!
 ```
 
 This replaces Rails.application.secrets with Secvault functionality. Your existing Rails 7.1 code works unchanged:

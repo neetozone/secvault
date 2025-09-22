@@ -1,5 +1,27 @@
 ## [Unreleased]
 
+## [2.3.0] - 2025-09-22
+
+### Changed
+
+- **Better method naming**: Renamed `setup_rails_71_integration!` to `setup_backward_compatibility_with_older_rails!`
+- **More generic approach**: New method name works for any older Rails version, not just 7.1
+- **Updated documentation**: README now uses "Older Rails Integration" instead of "Rails 7.1 Integration"
+- **Clearer version support**: Documentation now shows "Rails 7.1 and older" for better clarity
+
+### Backward Compatibility
+
+- ✅ **Old method name still works**: `setup_rails_71_integration!` is aliased to the new method
+- ✅ **No breaking changes**: All existing code continues to work
+- ✅ **Updated test apps**: Rails 7.1 test app uses the new, cleaner method name
+
+### Benefits
+
+- **Future-proof naming**: Works for Rails 7.1, 7.0, 6.x, or any version with native secrets
+- **Clearer intent**: Method name clearly indicates it's for backward compatibility
+- **Better documentation**: More generic approach in README and code comments
+- **Maintained compatibility**: Existing users don't need to change anything
+
 ## [2.2.0] - 2025-09-22
 
 ### Added
