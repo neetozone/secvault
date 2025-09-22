@@ -29,6 +29,12 @@ And then execute:
 $ bundle install
 ```
 
+### Rails Version Compatibility
+
+- **Rails 7.2+**: Automatic setup, drop-in replacement for removed secrets functionality
+- **Rails 7.1**: Manual setup required (see Rails 7.1 Integration section below)
+- **Rails 8.0+**: Full compatibility
+
 ## Setup
 
 ### 1. Generate secrets file
@@ -146,6 +152,69 @@ ENV RAILS_SECRETS_KEY=your_encryption_key
 | `rake secvault:setup` | Create encrypted secrets.yml and key |
 | `rake secvault:edit` | Edit the encrypted secrets file |
 | `rake secvault:show` | Display decrypted secrets content |
+
+## Rails 7.1 Integration
+
+For Rails 7.1 applications, Secvault provides a simple integration method to replace the native Rails::Secrets functionality and test Secvault before upgrading to Rails 7.2+.
+
+### Quick Setup (Recommended)
+
+Add this to `config/initializers/secvault.rb`:
+
+```ruby
+# config/initializers/secvault.rb
+Secvault.setup_rails_71_integration!
+```
+
+That's it! This single line will:
+- Override native Rails::Secrets with Secvault implementation
+- Replace Rails.application.secrets with Secvault functionality
+- Load secrets from config/secrets.yml automatically
+
+### Manual Setup (Advanced)
+
+If you prefer more control, you can set it up manually:
+
+```ruby
+# config/initializers/secvault.rb
+module Rails
+  remove_const(:Secrets) if defined?(Secrets)
+  Secrets = Secvault::RailsSecrets
+end
+
+Rails.application.config.after_initialize do
+  secrets_path = Rails.root.join("config/secrets.yml")
+  
+  if secrets_path.exist?
+    loaded_secrets = Rails::Secrets.parse([secrets_path], env: Rails.env)
+    secrets_object = ActiveSupport::OrderedOptions.new
+    secrets_object.merge!(loaded_secrets)
+    
+    Rails.application.define_singleton_method(:secrets) do
+      secrets_object
+    end
+  end
+end
+```
+
+### Rails 7.1 Benefits
+
+✅ **Test before upgrading**: Validate Secvault works with your secrets  
+✅ **Zero code changes**: Existing Rails 7.1 code continues to work  
+✅ **Smooth migration**: Gradual transition to Rails 7.2+  
+✅ **Full compatibility**: All Rails.application.secrets functionality preserved  
+
+### Example Rails 7.1 Usage
+
+```ruby
+# Works exactly like native Rails 7.1
+Rails.application.secrets.api_key
+Rails.application.secrets.oauth_settings[:google_client_id]
+
+# Plus enhanced Secvault functionality
+Rails::Secrets.parse_default(env: 'development')
+Rails::Secrets.parse([custom_path], env: Rails.env)
+```
 
 ## Migration from Rails < 7.2
 
