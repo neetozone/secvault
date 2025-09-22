@@ -46,10 +46,10 @@ loader.setup
 #   Rails.application.secrets.oauth_settings[:google_client_id]
 #   Rails::Secrets.parse_default(env: 'development')
 #
-# ## Rake Tasks:
-#   rake secvault:setup    # Create plain secrets.yml file
-#   rake secvault:edit     # Edit secrets.yml file
-#   rake secvault:show     # Display secrets.yml content
+# ## Getting Started:
+#   1. Create config/secrets.yml with your secrets
+#   2. Use Rails.application.secrets.your_secret in your app
+#   3. For production, use environment variables with ERB syntax
 #
 # @see https://github.com/unnitallman/secvault
 module Secvault

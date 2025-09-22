@@ -1,5 +1,33 @@
 ## [Unreleased]
 
+## [2.1.0] - 2025-09-22
+
+### Removed
+
+- **Removed all rake tasks** - Ultimate simplicity! No more `rake secvault:setup`, `rake secvault:edit`, or `rake secvault:show`
+- Removed `lib/secvault/tasks.rake` file entirely
+- Removed rake task loading from railtie
+
+### Changed
+
+- **Ultra-simple setup**: Just create `config/secrets.yml` with any text editor
+- Updated README to reflect manual file creation instead of rake tasks
+- Updated module documentation to show simple 3-step process
+- Cleaner railtie without task loading complexity
+
+### Benefits
+
+- **Zero dependencies on rake tasks** - works with just plain YAML files
+- **Even simpler** - no commands to remember, just edit YAML files
+- **More intuitive** - developers already know how to create and edit YAML files
+- **Less code** - removed unnecessary complexity
+
+### Tested
+
+- ✅ Rails 7.1 integration works perfectly
+- ✅ Rails 8.0 automatic setup works perfectly
+- ✅ No rake task conflicts or errors
+
 ## [2.0.0] - 2025-09-22
 
 ### BREAKING CHANGES

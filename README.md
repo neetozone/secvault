@@ -21,11 +21,11 @@ bundle install
 ## Quick Start (Rails 7.2+)
 
 ```bash
-# 1. Create secrets.yml with rake task
-rake secvault:setup
+# 1. Create secrets.yml
+touch config/secrets.yml
 
-# 2. Edit secrets
-rake secvault:edit
+# 2. Edit with your favorite editor
+$EDITOR config/secrets.yml
 ```
 
 **Usage in your app:**
@@ -68,13 +68,6 @@ Rails.application.secrets.oauth_settings   # ✅ Works
 Rails::Secrets.parse_default               # ✅ Enhanced functionality
 ```
 
-## Available Commands
-
-```bash
-rake secvault:setup    # Create plain secrets.yml file
-rake secvault:edit     # Edit secrets.yml file
-rake secvault:show     # Display secrets.yml content
-```
 
 ## Security
 
