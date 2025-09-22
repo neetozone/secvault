@@ -1,5 +1,34 @@
 ## [Unreleased]
 
+## [2.2.0] - 2025-09-22
+
+### Added
+
+- **New simplified API**: `Rails::Secrets.load()` - cleaner method to load default config/secrets.yml
+- **Enhanced README** with comprehensive examples for multiple files usage
+- **Better documentation** showing how to parse custom files and multiple file merging
+- **Backward compatibility aliases** - `parse_default` and `read` still work
+
+### Changed
+
+- **Improved method naming**: `Rails::Secrets.load()` is now the preferred method over `parse_default()`
+- **Enhanced documentation** in code with clear examples for single file, multiple files, and custom paths
+- **Better README examples** showing advanced usage patterns
+
+### Examples Added
+
+- Multiple secrets files merging: `Rails::Secrets.parse(['secrets.yml', 'secrets.local.yml'], env: Rails.env)`
+- Environment-specific loading: `Rails::Secrets.load(env: 'production')`
+- Custom file parsing: `Rails::Secrets.parse(['config/custom.yml'], env: Rails.env)`
+- Multiple path support: `Rails::Secrets.parse([Rails.root.join('config', 'secrets.yml')], env: Rails.env)`
+
+### Backward Compatibility
+
+- ✅ All existing methods still work
+- ✅ `parse_default` → `load` (alias maintained)
+- ✅ `read` → `load` (alias maintained)
+- ✅ No breaking changes
+
 ## [2.1.0] - 2025-09-22
 
 ### Removed

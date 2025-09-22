@@ -51,6 +51,39 @@ production:
   api_key: <%= ENV['API_KEY'] %>
 ```
 
+## Advanced Usage
+
+**Multiple secrets files (merged in order):**
+```ruby
+# Parse multiple files - later files override earlier ones
+secrets = Rails::Secrets.parse([
+  'config/secrets.yml',
+  'config/secrets.local.yml',
+  'config/secrets.production.yml'
+], env: Rails.env)
+```
+
+**Load specific environment:**
+```ruby
+# Load production secrets in any environment
+production_secrets = Rails::Secrets.load(env: 'production')
+
+# Load development secrets
+dev_secrets = Rails::Secrets.load(env: 'development')
+```
+
+**Custom files:**
+```ruby
+# Parse a custom secrets file
+custom_secrets = Rails::Secrets.parse(['config/custom.yml'], env: Rails.env)
+
+# Parse from different paths
+all_secrets = Rails::Secrets.parse([
+  Rails.root.join('config', 'secrets.yml'),
+  Rails.root.join('config', 'deploy', 'secrets.yml')
+], env: Rails.env)
+```
+
 ## Rails 7.1 Integration
 
 Test Secvault in Rails 7.1 before upgrading to 7.2+:
@@ -65,7 +98,8 @@ This replaces Rails.application.secrets with Secvault functionality. Your existi
 ```ruby
 Rails.application.secrets.api_key          # ✅ Works
 Rails.application.secrets.oauth_settings   # ✅ Works
-Rails::Secrets.parse_default               # ✅ Enhanced functionality
+Rails::Secrets.load                        # ✅ Load default config/secrets.yml
+Rails::Secrets.parse(['custom.yml'], env: Rails.env)  # ✅ Parse custom files
 ```
 
 

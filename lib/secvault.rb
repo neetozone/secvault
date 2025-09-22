@@ -44,7 +44,8 @@ loader.setup
 # ## Usage:
 #   Rails.application.secrets.api_key
 #   Rails.application.secrets.oauth_settings[:google_client_id]
-#   Rails::Secrets.parse_default(env: 'development')
+#   Rails::Secrets.load(env: 'development')  # Load default config/secrets.yml
+#   Rails::Secrets.parse(['custom.yml'], env: Rails.env)  # Parse custom files
 #
 # ## Getting Started:
 #   1. Create config/secrets.yml with your secrets

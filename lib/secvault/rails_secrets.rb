@@ -7,43 +7,41 @@ module Secvault
   module RailsSecrets
     extend self
     
-    # Classic Rails::Secrets.parse method
+    # Parse secrets from one or more YAML files
     # 
-    # Parses secrets files with support for:
-    # - ERB templating 
+    # Supports:
+    # - ERB templating for environment variables
     # - Shared sections that apply to all environments
     # - Environment-specific sections
+    # - Multiple files (merged in order)
     # - Deep symbolized keys
     #
-    # Example usage:
-    #   Rails::Secrets.parse([Pathname.new('config/secrets.yml')], env: 'development')
-    #
-    # Example secrets.yml structure:
-    #   shared:
-    #     common_key: shared_value
+    # Examples:
+    #   # Single file
+    #   Rails::Secrets.parse(['config/secrets.yml'], env: 'development')
     #   
-    #   development:
-    #     secret_key_base: dev_secret
-    #     api_key: dev_api_key
+    #   # Multiple files (merged in order)
+    #   Rails::Secrets.parse([
+    #     'config/secrets.yml',
+    #     'config/secrets.local.yml'
+    #   ], env: 'development')
     #   
-    #   production:
-    #     secret_key_base: <%= ENV["SECRET_KEY_BASE"] %>
-    #     api_key: <%= ENV["API_KEY"] %>
-    #
+    #   # Load default config/secrets.yml
+    #   Rails::Secrets.load  # uses current Rails.env
+    #   Rails::Secrets.load(env: 'production')
     def parse(paths, env:)
       Secvault::Secrets.parse(paths, env: env.to_s)
     end
     
-    # Convenience method to parse the default secrets file
-    def parse_default(env: Rails.env)
+    # Load secrets from the default config/secrets.yml file
+    def load(env: Rails.env)
       secrets_path = Rails.root.join("config/secrets.yml")
       parse([secrets_path], env: env)
     end
     
-    # Read and parse secrets for the current Rails environment
-    def read(env: Rails.env)
-      parse_default(env: env)
-    end
+    # Backward compatibility aliases (deprecated)
+    alias_method :parse_default, :load
+    alias_method :read, :load
   end
 end
 
