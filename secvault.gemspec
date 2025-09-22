@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Unnikrishnan KP"]
   spec.email = ["unnikrishnan.kp@bigbinary.com"]
 
-  spec.summary = "Rails secrets.yml functionality for Rails 7.2+"
-  spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, allowing you to manage encrypted secrets using the familiar YAML-based approach."
+  spec.summary = "Rails secrets.yml functionality for Rails 7.2+ and Rails 8.0+"
+  spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, allowing you to manage encrypted secrets using the familiar YAML-based approach. Compatible with Rails 8.0+."
   spec.homepage = "https://github.com/unnitallman/secvault"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  # Rails 7.2+ dependency
+  # Rails 7.2+ and 8.0+ dependency
   spec.add_dependency "rails", ">= 7.2.0"
   spec.add_dependency "zeitwerk", "~> 2.6"
 

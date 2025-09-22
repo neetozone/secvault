@@ -9,9 +9,10 @@ module Secvault
     class SecretsGenerator < Rails::Generators::Base
       source_root File.expand_path("templates", __dir__)
 
-      desc "Creates a secrets.yml file for encrypted secrets management"
+      desc "Creates a secrets.yml file for secrets management"
 
       class_option :force, type: :boolean, default: false, desc: "Overwrite existing secrets.yml"
+      class_option :encrypted, type: :boolean, default: false, desc: "Create encrypted secrets.yml (default: plain YAML)"
 
       def create_secrets_file
         secrets_path = Rails.root.join("config/secrets.yml")
@@ -22,27 +23,32 @@ module Secvault
           return
         end
 
-        # Generate encryption key
-        unless key_path.exist?
-          key = ActiveSupport::EncryptedFile.generate_key
-          File.write(key_path, key)
-          say "Generated encryption key in config/secrets.yml.key", :green
-        end
-
-        # Create encrypted secrets file with template
-        encrypted_file = ActiveSupport::EncryptedFile.new(
-          content_path: secrets_path,
-          key_path: key_path,
-          env_key: "RAILS_SECRETS_KEY",
-          raise_if_missing_key: true
-        )
-
-        # Write default content
         default_content = generate_default_secrets
-        encrypted_file.write(default_content)
 
-        say "Created encrypted secrets.yml file", :green
-        say "Add config/secrets.yml.key to your .gitignore file", :yellow
+        if options[:encrypted]
+          # Create encrypted secrets file
+          unless key_path.exist?
+            key = ActiveSupport::EncryptedFile.generate_key
+            File.write(key_path, key)
+            say "Generated encryption key in config/secrets.yml.key", :green
+          end
+
+          encrypted_file = ActiveSupport::EncryptedFile.new(
+            content_path: secrets_path,
+            key_path: key_path,
+            env_key: "RAILS_SECRETS_KEY",
+            raise_if_missing_key: true
+          )
+
+          encrypted_file.write(default_content)
+          say "Created encrypted secrets.yml file", :green
+          say "Add config/secrets.yml.key to your .gitignore file", :yellow
+        else
+          # Create plain YAML secrets file
+          File.write(secrets_path, default_content)
+          say "Created plain secrets.yml file", :green
+          say "Remember to add config/secrets.yml to your .gitignore if it contains sensitive data", :yellow
+        end
       end
 
       def add_to_gitignore

@@ -3,6 +3,7 @@
 require "active_support/encrypted_file"
 require "active_support/core_ext/hash/keys"
 require "active_support/core_ext/object/blank"
+require "active_support/ordered_options"
 require "pathname"
 require "erb"
 require "yaml"
@@ -15,10 +16,42 @@ module Secvault
         key_path = app.root.join("config/secrets.yml.key")
 
         if secrets_path.exist?
+          # Use a more reliable approach that works in all environments
           app.config.before_configuration do
-            # Set up secrets if they exist
-            secrets = read_secrets(secrets_path, key_path, Rails.env)
-            Rails.application.secrets.merge!(secrets) if secrets
+            current_env = ENV['RAILS_ENV'] || Rails.env || 'development'
+            setup_secrets_immediately(app, secrets_path, key_path, current_env)
+          end
+          
+          # Also try during to_prepare as a fallback
+          app.config.to_prepare do
+            current_env = Rails.env
+            unless Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
+              setup_secrets_immediately(app, secrets_path, key_path, current_env)
+            end
+          end
+        end
+      end
+
+      def setup_secrets_immediately(app, secrets_path, key_path, env)
+        # Set up secrets if they exist
+        secrets = read_secrets(secrets_path, key_path, env)
+        if secrets
+          # Rails 8.0+ compatibility: Add secrets accessor that initializes on first access
+          unless Rails.application.respond_to?(:secrets)
+            Rails.application.define_singleton_method(:secrets) do
+              @secrets ||= begin
+                current_secrets = ActiveSupport::OrderedOptions.new
+                # Re-read secrets to ensure we have the right environment
+                env_secrets = Secvault::Secrets.read_secrets(secrets_path, key_path, Rails.env)
+                current_secrets.merge!(env_secrets) if env_secrets
+                current_secrets
+              end
+            end
+          end
+          
+          # If secrets accessor already exists, merge the secrets
+          if Rails.application.respond_to?(:secrets) && Rails.application.secrets.respond_to?(:merge!)
+            Rails.application.secrets.merge!(secrets)
           end
         end
       end

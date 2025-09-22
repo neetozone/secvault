@@ -20,7 +20,7 @@ module Secvault
   extend self
 
   def install!
-    return if Rails.env.test? || defined?(Rails::Railtie).nil?
+    return if defined?(Rails::Railtie).nil?
 
     require "secvault/railtie"
   end
