@@ -1,6 +1,6 @@
 # Secvault
 
-Restores the classic Rails `secrets.yml` functionality that was removed in Rails 7.2. Uses plain YAML files by default, with optional encryption support.
+Restores the classic Rails `secrets.yml` functionality that was removed in Rails 7.2. Uses simple, plain YAML files for environment-specific secrets management.
 
 **Rails Version Support:**
 - **Rails 7.1**: Manual setup (see Rails 7.1 Integration below)
@@ -21,11 +21,11 @@ bundle install
 ## Quick Start (Rails 7.2+)
 
 ```bash
-# 1. Create plain secrets.yml
-touch config/secrets.yml
+# 1. Create secrets.yml with rake task
+rake secvault:setup
 
-# 2. Edit with your favorite editor
-$EDITOR config/secrets.yml
+# 2. Edit secrets
+rake secvault:edit
 ```
 
 **Usage in your app:**
@@ -68,21 +68,19 @@ Rails.application.secrets.oauth_settings   # ✅ Works
 Rails::Secrets.parse_default               # ✅ Enhanced functionality
 ```
 
-## Optional: Encryption Support
-
-For sensitive secrets, you can use encryption:
+## Available Commands
 
 ```bash
-rake secvault:setup    # Create encrypted secrets.yml and key
-rake secvault:edit     # Edit encrypted secrets file
-rake secvault:show     # Display decrypted content
+rake secvault:setup    # Create plain secrets.yml file
+rake secvault:edit     # Edit secrets.yml file
+rake secvault:show     # Display secrets.yml content
 ```
 
 ## Security
 
 ⚠️ Never commit production secrets to version control  
-✅ Use environment variables for production secrets  
-✅ For encryption: Never commit `config/secrets.yml.key` and set `export RAILS_SECRETS_KEY=your_key`
+✅ Use environment variables for production secrets with ERB syntax: `<%= ENV['SECRET'] %>`  
+✅ Add `config/secrets.yml` to `.gitignore` if it contains sensitive data
 
 ## License
 

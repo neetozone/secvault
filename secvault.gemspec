@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.authors = ["Unnikrishnan KP"]
   spec.email = ["unnikrishnan.kp@bigbinary.com"]
 
-  spec.summary = "Rails secrets.yml functionality for Rails 7.1+, 7.2+ and Rails 8.0+"
-  spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, allowing you to manage encrypted secrets using the familiar YAML-based approach. Compatible with Rails 7.1+, 7.2+ and 8.0+."
+  spec.summary = "Simple Rails secrets.yml functionality for Rails 7.1+, 7.2+ and Rails 8.0+"
+  spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, using simple, plain YAML files for environment-specific secrets management. Compatible with Rails 7.1+, 7.2+ and 8.0+."
   spec.homepage = "https://github.com/unnitallman/secvault"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"

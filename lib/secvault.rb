@@ -3,7 +3,6 @@
 require "rails"
 require "yaml"
 require "erb"
-require "active_support/encrypted_file"
 require "active_support/core_ext/hash/keys"
 require "zeitwerk"
 
@@ -12,11 +11,11 @@ require_relative "secvault/version"
 loader = Zeitwerk::Loader.for_gem
 loader.setup
 
-# Secvault - Enhanced secrets management for Rails
+# Secvault - Simple secrets management for Rails
 # 
 # Secvault restores the classic Rails secrets.yml functionality that was removed 
-# in Rails 7.2, allowing you to manage encrypted secrets using the familiar 
-# YAML-based approach.
+# in Rails 7.2, using simple, plain YAML files for environment-specific secrets 
+# management.
 #
 # ## Rails Version Support:
 # - Rails 7.1: Requires manual setup (see Rails 7.1 integration guide)
@@ -47,11 +46,14 @@ loader.setup
 #   Rails.application.secrets.oauth_settings[:google_client_id]
 #   Rails::Secrets.parse_default(env: 'development')
 #
+# ## Rake Tasks:
+#   rake secvault:setup    # Create plain secrets.yml file
+#   rake secvault:edit     # Edit secrets.yml file
+#   rake secvault:show     # Display secrets.yml content
+#
 # @see https://github.com/unnitallman/secvault
 module Secvault
   class Error < StandardError; end
-  class MissingKeyError < Error; end
-  class InvalidKeyError < Error; end
 
   extend self
 

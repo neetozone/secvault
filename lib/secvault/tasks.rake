@@ -1,135 +1,75 @@
 # frozen_string_literal: true
 
-require "active_support/encrypted_file"
 require "securerandom"
 
 namespace :secvault do
-  desc "Setup secrets.yml file (plain YAML by default)"
+  desc "Create a plain YAML secrets.yml file"
   task setup: :environment do
     secrets_path = Rails.root.join("config/secrets.yml")
-    key_path = Rails.root.join("config/secrets.yml.key")
-    encrypted = ENV["ENCRYPTED"] == "true"
 
     if secrets_path.exist?
       puts "Secrets file already exists at #{secrets_path}"
     else
       default_content = <<~YAML
-        # Be sure to restart your server when you modify this file.
+        # Plain YAML secrets file
+        # Environment-specific secrets for your Rails application
         #
-        # Your secret key is used for verifying the integrity of signed cookies.
-        # If you change this key, all old signed cookies will become invalid!
-        #
-        # Make sure the secret is at least 30 characters and all random,
-        # no regular words or you'll be exposed to dictionary attacks.
-        # You can use `rails secret` to generate a secure secret key.
+        # For production, use environment variables with ERB syntax:
+        # production:
+        #   api_key: <%= ENV['API_KEY'] %>
 
         development:
           secret_key_base: #{SecureRandom.hex(64)}
+          # Add your development secrets here
+          # api_key: dev_key
+          # database_password: dev_password
 
         test:
           secret_key_base: #{SecureRandom.hex(64)}
+          # Add your test secrets here
+          # api_key: test_key
 
-        # Do not keep production secrets in the repository,
-        # instead read values from the environment.
         production:
           secret_key_base: <%= ENV["SECRET_KEY_BASE"] %>
+          # Use environment variables for production secrets
+          # api_key: <%= ENV["API_KEY"] %>
+          # database_password: <%= ENV["DATABASE_PASSWORD"] %>
       YAML
 
-      if encrypted
-        # Create encrypted file
-        unless key_path.exist?
-          key = ActiveSupport::EncryptedFile.generate_key
-          File.write(key_path, key)
-          puts "Generated encryption key in #{key_path}"
-        end
-
-        encrypted_file = ActiveSupport::EncryptedFile.new(
-          content_path: secrets_path,
-          key_path: key_path,
-          env_key: "RAILS_SECRETS_KEY",
-          raise_if_missing_key: true
-        )
-        encrypted_file.write(default_content)
-        puts "Created encrypted secrets.yml file"
-        puts "Add #{key_path} to your .gitignore file"
-      else
-        # Create plain YAML file
-        File.write(secrets_path, default_content)
-        puts "Created plain secrets.yml file"
-        puts "Remember to add #{secrets_path} to your .gitignore if it contains sensitive data"
-      end
+      File.write(secrets_path, default_content)
+      puts "✅ Created plain secrets.yml file at #{secrets_path}"
+      puts "⚠️  Remember to add production secrets as environment variables"
+      puts "⚠️  Never commit production secrets to version control"
     end
   end
 
-  desc "Edit secrets.yml file"
+  desc "Edit the plain YAML secrets.yml file"
   task edit: :environment do
     secrets_path = Rails.root.join("config/secrets.yml")
-    key_path = Rails.root.join("config/secrets.yml.key")
 
     unless secrets_path.exist?
       puts "Secrets file doesn't exist. Run 'rake secvault:setup' first."
       exit 1
     end
 
-    # Check if file is encrypted
-    is_encrypted = Secvault::Secrets.encrypted?(secrets_path)
-
-    if is_encrypted && key_path.exist?
-      # Handle encrypted file
-      encrypted_file = ActiveSupport::EncryptedFile.new(
-        content_path: secrets_path,
-        key_path: key_path,
-        env_key: "RAILS_SECRETS_KEY",
-        raise_if_missing_key: true
-      )
-
-      encrypted_file.change do |tmp_path|
-        system("#{ENV["EDITOR"] || "vi"} #{tmp_path}")
-      end
-
-      puts "Updated encrypted #{secrets_path}"
-    else
-      # Handle plain YAML file
-      system("#{ENV["EDITOR"] || "vi"} #{secrets_path}")
-      puts "Updated plain #{secrets_path}"
-    end
-  rescue ActiveSupport::EncryptedFile::MissingKeyError
-    puts "Missing encryption key to decrypt secrets.yml."
-    puts "Ask your team for your secrets key and put it in #{key_path}"
-  rescue ActiveSupport::EncryptedFile::InvalidMessage
-    puts "Invalid encryption key for secrets.yml."
+    # Open the plain YAML file in editor
+    editor = ENV["EDITOR"] || "vi"
+    system("#{editor} #{secrets_path}")
+    puts "📝 Updated #{secrets_path}"
   end
 
-  desc "Show secrets.yml content"
+  desc "Show the plain YAML secrets.yml content"
   task show: :environment do
     secrets_path = Rails.root.join("config/secrets.yml")
-    key_path = Rails.root.join("config/secrets.yml.key")
 
     unless secrets_path.exist?
       puts "Secrets file doesn't exist. Run 'rake secvault:setup' first."
       exit 1
     end
 
-    # Check if file is encrypted
-    is_encrypted = Secvault::Secrets.encrypted?(secrets_path)
-
-    if is_encrypted && key_path.exist?
-      # Handle encrypted file
-      encrypted_file = ActiveSupport::EncryptedFile.new(
-        content_path: secrets_path,
-        key_path: key_path,
-        env_key: "RAILS_SECRETS_KEY",
-        raise_if_missing_key: true
-      )
-      puts encrypted_file.read
-    else
-      # Handle plain YAML file
-      puts File.read(secrets_path)
-    end
-  rescue ActiveSupport::EncryptedFile::MissingKeyError
-    puts "Missing encryption key to decrypt secrets.yml."
-    puts "Ask your team for your secrets key and put it in #{key_path}"
-  rescue ActiveSupport::EncryptedFile::InvalidMessage
-    puts "Invalid encryption key for secrets.yml."
+    puts "📄 Contents of #{secrets_path}:"
+    puts "#{'=' * 50}"
+    puts File.read(secrets_path)
+    puts "#{'=' * 50}"
   end
 end

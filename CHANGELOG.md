@@ -1,5 +1,37 @@
 ## [Unreleased]
 
+## [2.0.0] - 2025-09-22
+
+### BREAKING CHANGES
+
+- **Removed all encryption functionality** - Secvault now focuses purely on plain YAML secrets management
+- Removed ActiveSupport::EncryptedFile dependencies
+- Removed MissingKeyError and InvalidKeyError exceptions
+- Removed `encrypted?`, `decrypt`, `decrypt_secrets` methods
+- Simplified rake tasks to work with plain YAML only
+
+### Added
+
+- Simplified `rake secvault:setup` that creates plain YAML files with helpful comments
+- Better error messages and user guidance in rake tasks
+- Cleaner, more focused codebase without encryption complexity
+
+### Changed
+
+- **Major simplification**: All secrets are now stored in plain YAML files
+- Updated README to reflect plain YAML approach
+- Updated module documentation and gemspec descriptions
+- Rake tasks now use emojis and better user experience
+- Production secrets should use ERB syntax with environment variables
+
+### Benefits
+
+- Much simpler gem with single focus: plain YAML secrets management
+- No encryption keys to manage or lose
+- Easy to understand, edit, and debug secrets files
+- Perfect for development and test environments
+- Production secrets via environment variables (recommended best practice)
+
 ## [1.0.4] - 2025-09-22
 
 ### Added
