@@ -102,13 +102,6 @@ Rails::Secrets.load                        # ✅ Load default config/secrets.yml
 Rails::Secrets.parse(['custom.yml'], env: Rails.env)  # ✅ Parse custom files
 ```
 
-
-## Security
-
-⚠️ Never commit production secrets to version control  
-✅ Use environment variables for production secrets with ERB syntax: `<%= ENV['SECRET'] %>`  
-✅ Add `config/secrets.yml` to `.gitignore` if it contains sensitive data
-
 ## License
 
 MIT License - see [LICENSE](https://opensource.org/licenses/MIT)
