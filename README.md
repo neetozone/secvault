@@ -7,16 +7,6 @@ Restores the classic Rails `secrets.yml` functionality that was removed in Rails
 - **Rails 7.2+**: Automatic setup
 - **Rails 8.0+**: Full compatibility
 
-## ✨ Key Features
-
-- 🔗 **YAML Anchor/Alias Support**: Use `default: &default` for shared configuration
-- 🌍 **ERB Interpolation**: Environment variables with type conversion (`ENV['VAR'].to_i`, boolean logic)
-- 📁 **Multi-File Loading**: Merge multiple YAML files (e.g., base + OAuth + local overrides)
-- 🔄 **Environment Switching**: Load different environments dynamically
-- 🛠️ **Development Tools**: Hot-reload secrets without server restart
-- 🔍 **Utility Methods**: `Secvault.active?` to check integration status
-- 🏗️ **Flexible Organization**: Feature-based, environment-based, or namespace-based file structures
-
 ## Installation
 
 ```ruby
@@ -100,21 +90,10 @@ Secvault.setup_multi_file!([
 ])
 ```
 
-**What this does automatically:**
-- ✅ Sets up Rails 7.1 compatibility (calls `setup_backward_compatibility_with_older_rails!`)
+**What this does:**
 - ✅ Loads and merges all files in order (later files override earlier ones)
 - ✅ Handles missing files gracefully
-- ✅ Adds `reload_secrets!` method in development
-- ✅ Provides logging (except in production)
 - ✅ Creates Rails.application.secrets with merged configuration
-
-**File organization example:**
-```
-config/
-├── secrets.yml           # Base application secrets
-├── secrets.oauth.yml     # OAuth providers & external APIs
-├── secrets.local.yml     # Local development overrides (gitignored)
-```
 
 **Advanced options:**
 ```ruby
@@ -160,7 +139,7 @@ dev_secrets = Rails::Secrets.load(env: 'development')
 
 ## ERB Features & Type Conversion
 
-Secvault supports powerful ERB templating with automatic type conversion:
+Secvault supports ERB templating with automatic type conversion:
 
 ```yaml
 production:
@@ -239,17 +218,6 @@ Rails.application.secrets.database.adapter  # "postgresql" (from default)
 Rails.application.secrets.database.host     # "localhost" (from environment)
 ```
 
-**Multi-file merging:**
-```ruby
-# Files loaded in order: base → oauth → local
-# Later files override earlier ones for the same keys
-# Hash values are deep merged, scalars are replaced
-
-Rails.application.secrets.api_key           # Could be from base or local file
-Rails.application.secrets.oauth.google      # From oauth file
-Rails.application.secrets.features.debug   # From local file override
-```
-
 ## Security Best Practices
 
 ### ⚠️ Production Security
@@ -267,11 +235,7 @@ Rails.application.secrets.features.debug   # From local file override
 
 ### 🔑 Recommended Structure
 ```yaml
-# ✅ GOOD: Base file with safe defaults
-development:
-  api_key: "safe_dev_key_for_team"
-  
-production:
+  production:
   api_key: <%= ENV['API_KEY'] %>  # ✅ From environment
 
 # ❌ BAD: Secrets hardcoded in base file
