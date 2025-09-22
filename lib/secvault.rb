@@ -23,6 +23,7 @@ module Secvault
     return if defined?(Rails::Railtie).nil?
 
     require "secvault/railtie"
+    require "secvault/rails_secrets"
   end
 end
 

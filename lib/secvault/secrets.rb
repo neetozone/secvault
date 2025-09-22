@@ -56,19 +56,38 @@ module Secvault
         end
       end
 
+      # Classic Rails::Secrets.parse implementation
+      # Parses secrets files and merges shared + environment-specific sections
       def parse(paths, env:)
-        configs = paths.collect do |path|
-          if path.exist?
-            content = encrypted?(path) ? decrypt(path) : path.read
-            YAML.safe_load(ERB.new(content).result, aliases: true) || {}
+        paths.each_with_object(Hash.new) do |path, all_secrets|
+          next unless path.exist?
+          
+          # Read and process the file content (handle both encrypted and plain)
+          source = if encrypted?(path)
+            decrypt(path)
           else
-            {}
+            preprocess(path)
           end
+          
+          # Process ERB and parse YAML
+          erb_result = ERB.new(source).result
+          secrets = if YAML.respond_to?(:unsafe_load)
+            YAML.unsafe_load(erb_result)
+          else
+            YAML.load(erb_result)
+          end
+          
+          secrets ||= {}
+          
+          # Merge shared secrets first, then environment-specific
+          all_secrets.merge!(secrets["shared"].deep_symbolize_keys) if secrets["shared"]
+          all_secrets.merge!(secrets[env].deep_symbolize_keys) if secrets[env]
         end
-
-        configs.reverse.reduce do |config, overrides|
-          config.deep_merge(overrides)
-        end[env] || {}
+      end
+      
+      # Helper method to preprocess plain YAML files (for ERB)
+      def preprocess(path)
+        path.read
       end
 
       def read_secrets(secrets_path, key_path, env)
