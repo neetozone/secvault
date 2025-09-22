@@ -12,6 +12,9 @@ module Secvault
   class Secrets
     class << self
       def setup(app)
+        # Only auto-setup for Rails 7.2+ where secrets functionality was removed
+        return unless rails_7_2_or_later?
+        
         secrets_path = app.root.join("config/secrets.yml")
         key_path = app.root.join("config/secrets.yml.key")
 
@@ -28,6 +31,19 @@ module Secvault
             unless Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
               setup_secrets_immediately(app, secrets_path, key_path, current_env)
             end
+          end
+        end
+      end
+      
+      # Manual setup method for Rails 7.1 (opt-in)
+      def setup_for_rails_71!(app)
+        secrets_path = app.root.join("config/secrets.yml")
+        key_path = app.root.join("config/secrets.yml.key")
+
+        if secrets_path.exist?
+          app.config.before_configuration do
+            current_env = ENV['RAILS_ENV'] || Rails.env || 'development'
+            setup_secrets_immediately(app, secrets_path, key_path, current_env)
           end
         end
       end
@@ -60,6 +76,8 @@ module Secvault
       # Parses secrets files and merges shared + environment-specific sections
       def parse(paths, env:)
         paths.each_with_object(Hash.new) do |path, all_secrets|
+          # Handle string paths by converting to Pathname
+          path = Pathname.new(path) unless path.respond_to?(:exist?)
           next unless path.exist?
           
           # Read and process the file content (handle both encrypted and plain)
@@ -146,6 +164,12 @@ module Secvault
           raise_if_missing_key: true
         )
         encrypted_file.read
+      end
+      
+      def rails_7_2_or_later?
+        rails_version = Rails.version
+        major, minor = rails_version.split('.').map(&:to_i)
+        major > 7 || (major == 7 && minor >= 2)
       end
     end
   end
