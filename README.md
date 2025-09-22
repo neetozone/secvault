@@ -225,24 +225,6 @@ Rails.application.secrets.database.host     # "localhost" (from environment)
 - **Use environment variables** in production with ERB: `<%= ENV['SECRET'] %>`
 - **Use ENV.fetch()** with fallbacks: `<%= ENV.fetch('SECRET', 'default') %>`
 
-### 📝 File Management
-- **Add sensitive files** to `.gitignore`:
-  ```gitignore
-  config/secrets.yml         # If contains sensitive data
-  config/secrets.local.yml   # Local development overrides
-  config/secrets.production.yml  # If used
-  ```
-
-### 🔑 Recommended Structure
-```yaml
-  production:
-  api_key: <%= ENV['API_KEY'] %>  # ✅ From environment
-
-# ❌ BAD: Secrets hardcoded in base file
-production:
-  api_key: "super_secret_production_key"  # ❌ Never do this
-```
-
 ## License
 
 MIT License - see [LICENSE](https://opensource.org/licenses/MIT)
