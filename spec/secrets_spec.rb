@@ -62,21 +62,23 @@ RSpec.describe Secvault::Secrets do
       end
     end
 
-    context "with shared sections" do
+    context "with YAML anchors" do
       let(:yaml_content) do
         <<~YAML
-          shared:
+          defaults: &defaults
             app_name: "Test Application"
             timeout: 30
             features:
               analytics: true
 
           development:
+            <<: *defaults
             secret_key_base: dev_secret
             features:
               debug: true
 
           test:
+            <<: *defaults
             secret_key_base: test_secret
         YAML
       end
@@ -85,21 +87,20 @@ RSpec.describe Secvault::Secrets do
       let(:secrets_file) { secrets_file_data[0] }
       let(:temp_dir) { secrets_file_data[1] }
 
-      it "merges shared sections with environment-specific sections" do
+      it "merges YAML anchors with environment-specific sections" do
         result = described_class.parse([secrets_file], env: "development")
 
         expect(result).to eq({
           app_name: "Test Application",
           timeout: 30,
           features: {
-            analytics: true,
-            debug: true
+            debug: true  # Note: YAML anchors replace, don't merge nested objects
           },
           secret_key_base: "dev_secret"
         })
       end
 
-      it "includes only shared sections for environments without specific sections" do
+      it "includes YAML anchor defaults for environments" do
         result = described_class.parse([secrets_file], env: "test")
 
         expect(result).to eq({
@@ -155,10 +156,6 @@ RSpec.describe Secvault::Secrets do
     context "with multiple files" do
       let(:base_yaml) do
         <<~YAML
-          shared:
-            app_name: "Base App"
-            timeout: 30
-
           development:
             secret_key_base: base_dev_secret
             api_key: base_api_key
@@ -170,10 +167,6 @@ RSpec.describe Secvault::Secrets do
 
       let(:override_yaml) do
         <<~YAML
-          shared:
-            version: "2.0.0"
-            timeout: 60
-
           development:
             api_key: override_api_key
             database:
@@ -199,9 +192,6 @@ RSpec.describe Secvault::Secrets do
         result = described_class.parse([base_file, override_file], env: "development")
 
         expect(result).to eq({
-          app_name: "Base App",
-          timeout: 60, # Override wins
-          version: "2.0.0", # Added from override
           secret_key_base: "base_dev_secret", # From base
           api_key: "override_api_key", # Override wins
           database: {

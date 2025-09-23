@@ -1,6 +1,6 @@
 # Secvault
 
-Restores Rails `secrets.yml` functionality. Simple YAML files for environment-specific secrets management.
+Simple YAML secrets management for Rails. Uses standard YAML anchors for sharing configuration.
 
 [![Gem Version](https://img.shields.io/gem/v/secvault.svg)](https://rubygems.org/gems/secvault)
 
@@ -21,14 +21,16 @@ Secvault.start!
 **2. Create secrets file:**
 ```yaml
 # config/secrets.yml
-shared:
+defaults: &defaults
   app_name: "MyApp"
 
 development:
+  <<: *defaults
   secret_key_base: "dev_secret"
   api_key: "dev_key"
 
 production:
+  <<: *defaults
   secret_key_base: <%= ENV['SECRET_KEY_BASE'] %>
   api_key: <%= ENV['API_KEY'] %>
 ```
@@ -43,34 +45,23 @@ Secvault.secrets.app_name
 
 ```ruby
 Secvault.start!(
-  files: ['config/secrets.yml'],           # Default
-  integrate_with_rails: false,             # Default: false
-  set_secret_key_base: true,              # Default: true
-  hot_reload: true,                       # Default: true in development
-  logger: true                            # Default: true except production
+  files: ['config/secrets.yml'],     # Files to load
+  integrate_with_rails: false,       # Add Rails.application.secrets
+  set_secret_key_base: true,         # Set Rails secret_key_base
+  hot_reload: true,                  # Auto-reload in development
+  logger: true                       # Log loading activity
 )
 ```
 
-**Primary access (default):**
+**Multiple files:**
 ```ruby
-Secvault.secrets.api_key
-Secvault.secrets.app_name
-```
-
-**Rails integration (optional):**
-```ruby
-# Enable Rails.application.secrets access
-Secvault.start!(integrate_with_rails: true)
-
-# Then use either:
-Secvault.secrets.api_key          # Direct access
-Rails.application.secrets.api_key # Rails integration
-```
-
-**Examples:**
-```ruby
-# Multiple files
 Secvault.start!(files: ['secrets.yml', 'local.yml'])
+```
+
+**Rails integration:**
+```ruby
+Secvault.start!(integrate_with_rails: true)
+Rails.application.secrets.api_key  # Now available
 ```
 
 
@@ -81,35 +72,27 @@ Secvault.start!(files: ['secrets.yml', 'local.yml'])
 production:
   api_key: <%= ENV['API_KEY'] %>
   pool_size: <%= ENV.fetch('DB_POOL', '5').to_i %>
-  hosts: <%= ENV.fetch('ALLOWED_HOSTS', 'localhost').split(',') %>
 ```
 
-**Shared sections:**
+**YAML anchors for sharing:**
 ```yaml
-shared:
+defaults: &defaults
   app_name: "MyApp"
-  features:
-    analytics: true
+  timeout: 30
 
 development:
-  secret_key_base: "dev_secret"
-  features:
-    debug: true  # Merges with shared.features
+  <<: *defaults
+  debug: true
+
+production:
+  <<: *defaults
+  timeout: 10  # Override specific values
 ```
 
-**Hot reload (development):**
+**Development helpers:**
 ```ruby
-# Enabled by default in development
-reload_secrets!
-```
-**Manual API:**
-```ruby
-# Parse files directly
-Rails::Secrets.parse(['secrets.yml'], env: 'production')
-
-# Check status
-Secvault.active?           # => true/false
-Secvault.rails_integrated? # => true/false
+reload_secrets!            # Reload files
+Secvault.active?           # Check status
 ```
 
 

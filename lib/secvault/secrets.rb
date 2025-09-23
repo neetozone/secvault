@@ -56,7 +56,7 @@ module Secvault
       end
 
       # Classic Rails::Secrets.parse implementation
-      # Parses plain YAML secrets files and merges shared + environment-specific sections
+      # Parses plain YAML secrets files for specific environment
       def parse(paths, env:)
         paths.each_with_object({}) do |path, all_secrets|
           # Handle string paths by converting to Pathname
@@ -72,8 +72,7 @@ module Secvault
 
           secrets ||= {}
 
-          # Merge shared secrets first, then environment-specific (using deep merge)
-          all_secrets.deep_merge!(secrets["shared"].deep_symbolize_keys) if secrets["shared"]
+          # Only load environment-specific section (YAML anchors handle sharing)
           all_secrets.deep_merge!(secrets[env].deep_symbolize_keys) if secrets[env]
         end
       end
