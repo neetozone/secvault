@@ -1,10 +1,11 @@
 # Secvault
 
-Restores the classic Rails `secrets.yml` functionality that was removed in Rails 7.2. Uses simple, plain YAML files for environment-specific secrets management with powerful features like YAML defaults, ERB interpolation, and multi-file configurations.
+Restores Rails `secrets.yml` functionality for environment-specific secrets management using YAML files with ERB templating.
 
-**Rails Version Support:**
-- **Rails 7.1 and older**: Manual setup (see Older Rails Integration below)
-- **Rails 7.2+**: Automatic setup
+## Rails Version Support
+
+- **Rails 7.2+**: Automatic setup (drop-in replacement for removed functionality)
+- **Rails 7.1**: Manual setup required
 - **Rails 8.0+**: Full compatibility
 
 ## Installation
@@ -14,202 +15,87 @@ Restores the classic Rails `secrets.yml` functionality that was removed in Rails
 gem 'secvault'
 ```
 
-```bash
-bundle install
-```
+## Quick Start
 
-## Quick Start (Rails 7.2+)
+Create `config/secrets.yml`:
 
-```bash
-# 1. Create secrets.yml
-touch config/secrets.yml
-
-# 2. Edit with your favorite editor
-$EDITOR config/secrets.yml
-```
-
-**Usage in your app:**
-```ruby
-Rails.application.secrets.api_key
-Rails.application.secrets.database_password
-```
-
-**Example secrets.yml with YAML defaults and ERB:**
 ```yaml
-# YAML defaults - inherited by all environments
-default: &default
-  app_name: "My Application"
-  database:
-    adapter: "postgresql"
-    pool: 5
-    timeout: 5000
-  api:
-    timeout: 30
-    retries: 3
-
 development:
-  <<: *default  # Inherit defaults
-  api_key: "dev_api_key_123"
-  database:
-    host: "localhost"
-    name: "myapp_development"
-  api:
-    base_url: "http://localhost:3000"  # Override default
+  api_key: "dev_key_123"
+  database_url: "postgresql://localhost/myapp_dev"
 
 production:
-  <<: *default  # Inherit defaults
   api_key: <%= ENV['API_KEY'] %>
-  database:
-    host: <%= ENV['DATABASE_HOST'] %>
-    name: <%= ENV['DATABASE_NAME'] %>
-    pool: <%= ENV.fetch('DATABASE_POOL', '10').to_i %>  # Type conversion
-  api:
-    base_url: <%= ENV['API_BASE_URL'] %>
-  
-  # Boolean conversion
-  features:
-    new_ui: <%= ENV.fetch('FEATURE_NEW_UI', 'true') == 'true' %>
-  
-  # Array conversion
-  oauth_scopes: <%= ENV.fetch('OAUTH_SCOPES', 'email,profile').split(',') %>
+  database_url: <%= ENV['DATABASE_URL'] %>
+```
+
+Access secrets in your app:
+
+```ruby
+Rails.application.secrets.api_key
+Rails.application.secrets.database_url
 ```
 
 ## Multi-File Configuration
 
-Organize secrets across multiple files with a **super clean API**:
+Load and merge multiple secrets files:
 
 ```ruby
 # config/initializers/secvault.rb
-require "secvault"
-
-# That's it! Just pass your files array
 Secvault.setup_multi_file!([
-  'config/secrets.yml',         # Base secrets
-  'config/secrets.oauth.yml',   # OAuth & APIs
-  'config/secrets.local.yml'    # Local overrides
-])
-```
-
-**What this does:**
-- ✅ Loads and merges all files in order (later files override earlier ones)
-- ✅ Handles missing files gracefully
-- ✅ Creates Rails.application.secrets with merged configuration
-
-**Advanced options:**
-```ruby
-# Disable reload helper or logging
-Secvault.setup_multi_file!(files, reload_method: false, logger: false)
-
-# Use Pathname objects if needed
-Secvault.setup_multi_file!([
-  Rails.root.join('config', 'secrets.yml'),
-  Rails.root.join('config', 'secrets.oauth.yml')
-])
-```
-
-## Advanced Usage
-
-**Manual multi-file parsing:**
-```ruby
-# Parse multiple files - later files override earlier ones
-secrets = Rails::Secrets.parse([
   'config/secrets.yml',
   'config/secrets.oauth.yml',
   'config/secrets.local.yml'
-], env: Rails.env)
+])
 ```
 
-**Load specific environment:**
+Files are merged in order with deep merge support for nested hashes.
+
+## Manual API
+
 ```ruby
-# Load production secrets in any environment
-production_secrets = Rails::Secrets.load(env: 'production')
+# Parse specific files
+secrets = Rails::Secrets.parse(['config/secrets.yml'], env: Rails.env)
 
-# Load development secrets
-dev_secrets = Rails::Secrets.load(env: 'development')
+# Load default config/secrets.yml
+secrets = Rails::Secrets.load(env: 'production')
+
+# Check if active
+Secvault.active? # => true/false
 ```
 
-**Environment-specific loading:**
-```ruby
-# Load production secrets in any environment
-production_secrets = Rails::Secrets.load(env: 'production')
+## Rails 7.1 Integration
 
-# Load development secrets
-dev_secrets = Rails::Secrets.load(env: 'development')
-```
-
-## ERB Features & Type Conversion
-
-Secvault supports ERB templating with automatic type conversion:
-
-```yaml
-production:
-  # String interpolation
-  api_key: <%= ENV['API_KEY'] %>
-  
-  # Integer conversion
-  database_pool: <%= ENV.fetch('DB_POOL', '10').to_i %>
-  
-  # Boolean conversion  
-  debug_enabled: <%= ENV.fetch('DEBUG', 'false') == 'true' %>
-  
-  # Array conversion
-  allowed_hosts: <%= ENV.fetch('HOSTS', 'localhost,127.0.0.1').split(',') %>
-  
-  # Fallback values
-  timeout: <%= ENV.fetch('TIMEOUT', '30').to_i %>
-  adapter: <%= ENV.fetch('DB_ADAPTER', 'postgresql') %>
-```
-
-## Development Tools
-
-**Hot-reload secrets (automatically available in development):**
-```ruby
-# In Rails console - automatically added by setup_multi_file!
-reload_secrets!  # Reloads all configured files without server restart
-# 🔄 Reloaded secrets from 3 files
-
-# Also available as:
-Rails.application.reload_secrets!
-```
-
-**Check integration status:**
-```ruby
-Secvault.active?  # Returns true if Secvault is managing secrets
-```
-
-## Older Rails Integration
-
-For Rails versions with existing secrets functionality (like Rails 7.1), use Secvault to test before upgrading:
+For Rails 7.1 with existing secrets functionality:
 
 ```ruby
 # config/initializers/secvault.rb
 Secvault.setup_backward_compatibility_with_older_rails!
 ```
 
-This replaces Rails.application.secrets with Secvault functionality. Your existing Rails 7.1 code works unchanged:
+## ERB Templating
 
-```ruby
-Rails.application.secrets.api_key          # ✅ Works
-Rails.application.secrets.oauth_settings   # ✅ Works
-Rails::Secrets.load                        # ✅ Load default config/secrets.yml
-Rails::Secrets.parse(['custom.yml'], env: Rails.env)  # ✅ Parse custom files
+Supports full ERB templating for environment variables:
+
+```yaml
+production:
+  api_key: <%= ENV['API_KEY'] %>
+  pool_size: <%= ENV.fetch('DB_POOL', '5').to_i %>
+  features:
+    enabled: <%= ENV.fetch('FEATURES_ON', 'false') == 'true' %>
+  hosts: <%= ENV.fetch('ALLOWED_HOSTS', 'localhost').split(',') %>
 ```
 
-**Check if Secvault is active:**
+## Development Tools
+
+Reload secrets in development:
+
 ```ruby
-if Secvault.active?
-  puts "Using Secvault for secrets management"
-else
-  puts "Using default Rails secrets functionality"
-end
+# Available after setup_multi_file!
+reload_secrets!
+Rails.application.reload_secrets!
 ```
-
-## Security Best Practices
-
-- **Never commit production secrets** to version control
-- **Use environment variables** in production with ERB: `<%= ENV['SECRET'] %>`
-- **Use ENV.fetch()** with fallbacks: `<%= ENV.fetch('SECRET', 'default') %>`
 
 ## License
 
-MIT License - see [LICENSE](https://opensource.org/licenses/MIT)
+MIT
