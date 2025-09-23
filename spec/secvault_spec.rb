@@ -13,7 +13,7 @@ RSpec.describe Secvault do
     it "has a version number" do
       expect(Secvault::VERSION).not_to be_nil
       expect(Secvault::VERSION).to match(/\A\d+\.\d+\.\d+\z/)
-      expect(Secvault::VERSION).to eq("2.7.1")
+      expect(Secvault::VERSION).to eq("3.0.0")
     end
   end
 
