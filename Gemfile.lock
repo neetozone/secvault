@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    secvault (1.0.0)
-      rails (>= 7.2.0)
+    secvault (2.6.0)
+      rails (>= 7.1.0)
       zeitwerk (~> 2.6)
 
 GEM

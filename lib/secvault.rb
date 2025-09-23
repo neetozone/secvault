@@ -12,9 +12,9 @@ loader = Zeitwerk::Loader.for_gem
 loader.setup
 
 # Secvault - Simple secrets management for Rails
-# 
-# Secvault restores the classic Rails secrets.yml functionality that was removed 
-# in Rails 7.2, using simple, plain YAML files for environment-specific secrets 
+#
+# Secvault restores the classic Rails secrets.yml functionality that was removed
+# in Rails 7.2, using simple, plain YAML files for environment-specific secrets
 # management.
 #
 # ## Rails Version Support:
@@ -57,7 +57,7 @@ module Secvault
   class Error < StandardError; end
 
   extend self
-  
+
   # Internal storage for loaded secrets
   @@loaded_secrets = nil
 
@@ -65,12 +65,12 @@ module Secvault
   def secrets
     @@loaded_secrets || ActiveSupport::OrderedOptions.new
   end
-  
+
   # Check if Secvault is currently active (started)
   def active?
     @@loaded_secrets != nil
   end
-  
+
   # Check if Secvault is integrated with Rails.application.secrets
   def rails_integrated?
     defined?(Rails) && Rails::Secrets == Secvault::RailsSecrets
@@ -82,7 +82,7 @@ module Secvault
     require "secvault/railtie"
     require "secvault/rails_secrets"
   end
-  
+
   # Helper method to set up Secvault for older Rails versions
   # This provides an easy way to integrate Secvault into older Rails apps
   # that still have native Rails::Secrets functionality (like Rails 7.1).
@@ -100,24 +100,24 @@ module Secvault
       Rails.send(:remove_const, :Secrets)
     end
     Rails.const_set(:Secrets, Secvault::RailsSecrets)
-    
+
     # Set up Rails.application.secrets replacement
     Rails.application.config.after_initialize do
       secrets_path = Rails.root.join("config/secrets.yml")
-      
+
       if secrets_path.exist?
         # Load secrets using Secvault
         loaded_secrets = Rails::Secrets.parse([secrets_path], env: Rails.env)
-        
+
         # Create ActiveSupport::OrderedOptions object for compatibility
         secrets_object = ActiveSupport::OrderedOptions.new
         secrets_object.merge!(loaded_secrets)
-        
+
         # Replace Rails.application.secrets
         Rails.application.define_singleton_method(:secrets) do
           secrets_object
         end
-        
+
         # Log integration success (except in production)
         unless Rails.env.production?
           Rails.logger&.info "[Secvault] Rails 7.1 integration complete. Loaded #{loaded_secrets.keys.size} secret keys."
@@ -127,14 +127,14 @@ module Secvault
       end
     end
   end
-  
+
   # Set up multi-file secrets loading with a clean API
   # Just pass an array of file paths and Secvault handles the rest
   #
   # Usage in an initializer:
   #   Secvault.setup_multi_file!([
   #     'config/secrets.yml',
-  #     'config/secrets.oauth.yml', 
+  #     'config/secrets.oauth.yml',
   #     'config/secrets.local.yml'
   #   ])
   #
@@ -145,47 +145,47 @@ module Secvault
   def setup_multi_file!(files, reload_method: Rails.env.development?, logger: !Rails.env.production?)
     # Ensure Secvault integration is active
     setup_backward_compatibility_with_older_rails! unless active?
-    
+
     # Convert strings to Pathname objects and resolve relative to Rails.root
     file_paths = Array(files).map do |file|
       file.is_a?(Pathname) ? file : Rails.root.join(file)
     end
-    
+
     # Set up the multi-file loading
     Rails.application.config.after_initialize do
       load_multi_file_secrets!(file_paths, logger: logger)
     end
-    
+
     # Add reload helper in development
     if reload_method
       add_reload_helper!(file_paths)
     end
   end
-  
+
   # Load secrets into Secvault.secrets only (no Rails integration)
   def load_secrets_only!(files, logger: !Rails.env.production?)
     # Convert strings to Pathname objects and resolve relative to Rails.root
     file_paths = Array(files).map do |file|
       file.is_a?(Pathname) ? file : Rails.root.join(file)
     end
-    
+
     existing_files = file_paths.select(&:exist?)
-    
+
     if existing_files.any?
       # Load and merge all secrets files using Secvault's parser directly
       merged_secrets = Secvault::Secrets.parse(existing_files, env: Rails.env)
-      
+
       # Store in Secvault.secrets (ActiveSupport::OrderedOptions for compatibility)
       @@loaded_secrets = ActiveSupport::OrderedOptions.new
       @@loaded_secrets.merge!(merged_secrets)
-      
+
       # Log successful loading
       if logger
         file_names = existing_files.map(&:basename)
-        Rails.logger&.info "[Secvault] Loaded #{existing_files.size} files: #{file_names.join(', ')}"
+        Rails.logger&.info "[Secvault] Loaded #{existing_files.size} files: #{file_names.join(", ")}"
         Rails.logger&.info "[Secvault] Parsed #{merged_secrets.keys.size} secret keys for #{Rails.env}"
       end
-      
+
       true
     else
       Rails.logger&.warn "[Secvault] No secrets files found" if logger
@@ -193,36 +193,36 @@ module Secvault
       false
     end
   end
-  
+
   # Load secrets from multiple files and merge them (with Rails integration)
   def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?)
     existing_files = file_paths.select(&:exist?)
-    
+
     if existing_files.any?
       # Load and merge all secrets files
       merged_secrets = Rails::Secrets.parse(existing_files, env: Rails.env)
-      
+
       # Create ActiveSupport::OrderedOptions object for Rails compatibility
       secrets_object = ActiveSupport::OrderedOptions.new
       secrets_object.merge!(merged_secrets)
-      
+
       # Replace Rails.application.secrets
       Rails.application.define_singleton_method(:secrets) { secrets_object }
-      
+
       # Log successful loading
       if logger
         file_names = existing_files.map(&:basename)
-        Rails.logger&.info "[Secvault Multi-File] Loaded #{existing_files.size} files: #{file_names.join(', ')}"
+        Rails.logger&.info "[Secvault Multi-File] Loaded #{existing_files.size} files: #{file_names.join(", ")}"
         Rails.logger&.info "[Secvault Multi-File] Merged #{merged_secrets.keys.size} secret keys for #{Rails.env}"
       end
-      
+
       merged_secrets
     else
       Rails.logger&.warn "[Secvault Multi-File] No secrets files found" if logger
       {}
     end
   end
-  
+
   # Add reload helper method for development
   def add_reload_helper!(file_paths)
     # Define reload method on Rails.application
@@ -231,15 +231,15 @@ module Secvault
       puts "🔄 Reloaded secrets from #{file_paths.size} files"
       true
     end
-    
+
     # Also make it available as a top-level method
     Object.define_method(:reload_secrets!) do
       Rails.application.reload_secrets!
     end
   end
-  
+
   # Start Secvault and load secrets (without Rails integration)
-  # 
+  #
   # Usage:
   #   Secvault.start!                                    # Uses config/secrets.yml only
   #   Secvault.start!(files: [])                        # Same as above
@@ -253,24 +253,22 @@ module Secvault
   #   - files: Array of file paths (String or Pathname). Defaults to ['config/secrets.yml']
   #   - logger: Enable logging (default: true except production)
   def start!(files: [], logger: !Rails.env.production?)
-    begin
-      # Default to host app's config/secrets.yml if no files specified
-      files_to_load = files.empty? ? ['config/secrets.yml'] : files
-      
-      # Load secrets into Secvault.secrets (completely independent of Rails)
-      load_secrets_only!(files_to_load, logger: logger)
-      
-      true
-    rescue => e
-      Rails.logger&.error "[Secvault] Failed to start: #{e.message}" if defined?(Rails)
-      false
-    end
+    # Default to host app's config/secrets.yml if no files specified
+    files_to_load = files.empty? ? ["config/secrets.yml"] : files
+
+    # Load secrets into Secvault.secrets (completely independent of Rails)
+    load_secrets_only!(files_to_load, logger: logger)
+
+    true
+  rescue => e
+    Rails.logger&.error "[Secvault] Failed to start: #{e.message}" if defined?(Rails)
+    false
   end
-  
+
   # Integrate loaded secrets with Rails.application.secrets
   def integrate_with_rails!
     return false unless @@loaded_secrets
-    
+
     begin
       # Set up Rails::Secrets to use Secvault's parser (only when integrating)
       unless rails_integrated?
@@ -279,12 +277,12 @@ module Secvault
         end
         Rails.const_set(:Secrets, Secvault::RailsSecrets)
       end
-      
+
       # Replace Rails.application.secrets with Secvault's loaded secrets
       Rails.application.define_singleton_method(:secrets) do
         Secvault.secrets
       end
-      
+
       Rails.logger&.info "[Secvault] Integrated with Rails.application.secrets" unless Rails.env.production?
       true
     rescue => e
@@ -292,7 +290,7 @@ module Secvault
       false
     end
   end
-  
+
   # Backward compatibility aliases
   alias_method :setup_rails_71_integration!, :setup_backward_compatibility_with_older_rails!
   alias_method :setup_multi_files!, :setup_multi_file!  # Alternative name
