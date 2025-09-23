@@ -45,7 +45,7 @@ Secvault.secrets.app_name
 
 ```ruby
 Secvault.start!(
-  files: ['config/secrets.yml'],     # Files to load (later files deep-merge over earlier ones)
+  files: ['config/secrets.yml'],     # Files to load (later files override earlier ones)
   integrate_with_rails: false,       # Add Rails.application.secrets
   set_secret_key_base: true,         # Set Rails secret_key_base
   hot_reload: true,                  # Auto-reload in development
@@ -55,7 +55,7 @@ Secvault.start!(
 
 **Multiple files:**
 ```ruby
-# Later files deep-merge over earlier ones
+# Later files override earlier ones
 Secvault.start!(files: ['secrets.yml', 'local.yml'])
 ```
 
