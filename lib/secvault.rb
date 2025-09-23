@@ -13,33 +13,20 @@ loader.setup
 
 # Secvault - Simple secrets management for Rails
 #
-# Secvault restores the classic Rails secrets.yml functionality that was removed
-# in Rails 7.2, using simple, plain YAML files for environment-specific secrets
-# management.
+# Secvault restores the classic Rails secrets.yml functionality using simple,
+# plain YAML files for environment-specific secrets management. Works consistently
+# across all Rails versions with automatic deprecation warning suppression.
 #
 # ## Rails Version Support:
-# - Rails 7.1: Requires manual setup (see Rails 7.1 integration guide)
-# - Rails 7.2+: Automatic setup, drop-in replacement for removed functionality
+# - Rails 7.1+: Full compatibility with automatic setup
+# - Rails 7.2+: Drop-in replacement for removed functionality
 # - Rails 8.0+: Full compatibility
 #
-# ## Rails 7.1 Integration:
-# For Rails 7.1 apps, add this initializer to override native Rails::Secrets:
+# ## Quick Start:
+# Add this to an initializer:
 #
 #   # config/initializers/secvault.rb
-#   module Rails
-#     remove_const(:Secrets) if defined?(Secrets)
-#     Secrets = Secvault::RailsSecrets
-#   end
-#
-#   Rails.application.config.after_initialize do
-#     secrets_path = Rails.root.join("config/secrets.yml")
-#     if secrets_path.exist?
-#       loaded_secrets = Rails::Secrets.parse([secrets_path], env: Rails.env)
-#       secrets_object = ActiveSupport::OrderedOptions.new
-#       secrets_object.merge!(loaded_secrets)
-#       Rails.application.define_singleton_method(:secrets) { secrets_object }
-#     end
-#   end
+#   Secvault.setup!
 #
 # ## Usage:
 #   Rails.application.secrets.api_key
@@ -83,26 +70,30 @@ module Secvault
     require "secvault/rails_secrets"
   end
 
-  # Helper method to set up Secvault for older Rails versions
-  # This provides an easy way to integrate Secvault into older Rails apps
-  # that still have native Rails::Secrets functionality (like Rails 7.1).
+  # Set up Secvault for all Rails versions
+  # This provides a universal way to integrate Secvault into Rails apps
+  # with consistent behavior across all Rails versions.
   #
   # Usage in an initializer:
-  #   Secvault.setup_backward_compatibility_with_older_rails!
+  #   Secvault.setup!
+  #   Secvault.setup!(suppress_warnings: false)
   #
   # This will:
-  # 1. Override native Rails::Secrets with Secvault implementation
+  # 1. Set up Rails::Secrets with Secvault implementation
   # 2. Replace Rails.application.secrets with Secvault-powered functionality
   # 3. Load secrets from config/secrets.yml automatically
-  def setup_backward_compatibility_with_older_rails!
+  # 4. Suppress Rails deprecation warnings about secrets (default: true)
+  # 5. Set Rails.application.config.secret_key_base from secrets (default: true)
+  def setup!(suppress_warnings: true, set_secret_key_base: true)
     # Override native Rails::Secrets
-    if defined?(Rails::Secrets)
-      Rails.send(:remove_const, :Secrets)
-    end
+    Rails.send(:remove_const, :Secrets) if defined?(Rails::Secrets)
     Rails.const_set(:Secrets, Secvault::RailsSecrets)
 
     # Set up Rails.application.secrets replacement
     Rails.application.config.after_initialize do
+      # Suppress Rails deprecation warnings about secrets if requested
+      suppress_secrets_deprecation_warning! if suppress_warnings
+
       secrets_path = Rails.root.join("config/secrets.yml")
 
       if secrets_path.exist?
@@ -118,9 +109,17 @@ module Secvault
           secrets_object
         end
 
+        # Set secret_key_base in Rails config to avoid accessing it from secrets
+        if set_secret_key_base && loaded_secrets.key?("secret_key_base")
+          Rails.application.config.secret_key_base = loaded_secrets["secret_key_base"]
+          unless Rails.env.production?
+            Rails.logger&.info "[Secvault] Set Rails.application.config.secret_key_base from secrets.yml"
+          end
+        end
+
         # Log integration success (except in production)
         unless Rails.env.production?
-          Rails.logger&.info "[Secvault] Rails 7.1 integration complete. Loaded #{loaded_secrets.keys.size} secret keys."
+          Rails.logger&.info "[Secvault] Integration complete. Loaded #{loaded_secrets.keys.size} secret keys."
         end
       else
         Rails.logger&.warn "[Secvault] No secrets.yml file found at #{secrets_path}"
@@ -142,9 +141,12 @@ module Secvault
   #   - files: Array of file paths (String or Pathname)
   #   - reload_method: Add a reload helper method (default: true in development)
   #   - logger: Enable/disable logging (default: true except in production)
-  def setup_multi_file!(files, reload_method: Rails.env.development?, logger: !Rails.env.production?)
+  #   - suppress_warnings: Suppress Rails deprecation warnings about secrets (default: true)
+  #   - set_secret_key_base: Set Rails.application.config.secret_key_base from secrets (default: true)
+  def setup_multi_file!(files, reload_method: Rails.env.development?, logger: !Rails.env.production?,
+    suppress_warnings: true, set_secret_key_base: true)
     # Ensure Secvault integration is active
-    setup_backward_compatibility_with_older_rails! unless active?
+    setup!(suppress_warnings: suppress_warnings, set_secret_key_base: set_secret_key_base) unless active?
 
     # Convert strings to Pathname objects and resolve relative to Rails.root
     file_paths = Array(files).map do |file|
@@ -153,13 +155,14 @@ module Secvault
 
     # Set up the multi-file loading
     Rails.application.config.after_initialize do
-      load_multi_file_secrets!(file_paths, logger: logger)
+      load_multi_file_secrets!(file_paths, logger: logger, suppress_warnings: suppress_warnings,
+        set_secret_key_base: set_secret_key_base)
     end
 
     # Add reload helper in development
-    if reload_method
-      add_reload_helper!(file_paths)
-    end
+    return unless reload_method
+
+    add_reload_helper!(file_paths)
   end
 
   # Load secrets into Secvault.secrets only (no Rails integration)
@@ -195,10 +198,14 @@ module Secvault
   end
 
   # Load secrets from multiple files and merge them (with Rails integration)
-  def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?)
+  def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?, suppress_warnings: true,
+    set_secret_key_base: true)
     existing_files = file_paths.select(&:exist?)
 
     if existing_files.any?
+      # Suppress Rails deprecation warnings about secrets if requested
+      suppress_secrets_deprecation_warning! if suppress_warnings
+
       # Load and merge all secrets files
       merged_secrets = Rails::Secrets.parse(existing_files, env: Rails.env)
 
@@ -208,6 +215,12 @@ module Secvault
 
       # Replace Rails.application.secrets
       Rails.application.define_singleton_method(:secrets) { secrets_object }
+
+      # Set secret_key_base in Rails config to avoid accessing it from secrets
+      if set_secret_key_base && merged_secrets.key?("secret_key_base")
+        Rails.application.config.secret_key_base = merged_secrets["secret_key_base"]
+        Rails.logger&.info "[Secvault Multi-File] Set Rails.application.config.secret_key_base from secrets" if logger
+      end
 
       # Log successful loading
       if logger
@@ -272,9 +285,7 @@ module Secvault
     begin
       # Set up Rails::Secrets to use Secvault's parser (only when integrating)
       unless rails_integrated?
-        if defined?(Rails::Secrets)
-          Rails.send(:remove_const, :Secrets)
-        end
+        Rails.send(:remove_const, :Secrets) if defined?(Rails::Secrets)
         Rails.const_set(:Secrets, Secvault::RailsSecrets)
       end
 
@@ -292,8 +303,9 @@ module Secvault
   end
 
   # Backward compatibility aliases
-  alias_method :setup_rails_71_integration!, :setup_backward_compatibility_with_older_rails!
-  alias_method :setup_multi_files!, :setup_multi_file!  # Alternative name
+  alias_method :setup_backward_compatibility_with_older_rails!, :setup! # Legacy name
+  alias_method :setup_rails_71_integration!, :setup! # Legacy name
+  alias_method :setup_multi_files!, :setup_multi_file! # Alternative name
 end
 
 Secvault.install! if defined?(Rails)

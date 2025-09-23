@@ -12,7 +12,7 @@ RSpec.configure do |config|
   end
 
   # Helper methods for creating test files
-  config.include Module.new {
+  config.include(Module.new do
     def create_temp_yaml_file(content, filename = "secrets.yml")
       temp_dir = Dir.mktmpdir
       file_path = File.join(temp_dir, filename)
@@ -40,5 +40,5 @@ RSpec.configure do |config|
         end
       end
     end
-  }
+  end)
 end

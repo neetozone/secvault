@@ -310,13 +310,4 @@ RSpec.describe Secvault::Secrets do
       end
     end
   end
-
-  describe "private methods" do
-    describe ".rails_7_2_or_later?" do
-      # We can't easily test this without Rails, but we can test the logic
-      it "should be a private method" do
-        expect(described_class.private_methods).to include(:rails_7_2_or_later?)
-      end
-    end
-  end
 end

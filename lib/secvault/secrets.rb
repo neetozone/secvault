@@ -11,62 +11,48 @@ module Secvault
   class Secrets
     class << self
       def setup(app)
-        # Only auto-setup for Rails 7.2+ where secrets functionality was removed
-        return unless rails_7_2_or_later?
-
+        # Auto-setup for all Rails versions with consistent behavior
         secrets_path = app.root.join("config/secrets.yml")
 
-        if secrets_path.exist?
-          # Use a more reliable approach that works in all environments
-          app.config.before_configuration do
-            current_env = ENV["RAILS_ENV"] || Rails.env || "development"
-            setup_secrets_immediately(app, secrets_path, current_env)
-          end
+        return unless secrets_path.exist?
 
-          # Also try during to_prepare as a fallback
-          app.config.to_prepare do
-            current_env = Rails.env
-            unless Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
-              setup_secrets_immediately(app, secrets_path, current_env)
-            end
-          end
+        # Use a reliable approach that works in all environments
+        app.config.before_configuration do
+          current_env = ENV["RAILS_ENV"] || Rails.env || "development"
+          setup_secrets_immediately(app, secrets_path, current_env)
         end
-      end
 
-      # Manual setup method for Rails 7.1 (opt-in)
-      def setup_for_rails_71!(app)
-        secrets_path = app.root.join("config/secrets.yml")
-
-        if secrets_path.exist?
-          app.config.before_configuration do
-            current_env = ENV["RAILS_ENV"] || Rails.env || "development"
+        # Also try during to_prepare as a fallback
+        app.config.to_prepare do
+          current_env = Rails.env
+          unless Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
             setup_secrets_immediately(app, secrets_path, current_env)
           end
         end
       end
 
-      def setup_secrets_immediately(app, secrets_path, env)
+      def setup_secrets_immediately(_app, secrets_path, env)
         # Set up secrets if they exist
         secrets = read_secrets(secrets_path, env)
-        if secrets
-          # Rails 8.0+ compatibility: Add secrets accessor that initializes on first access
-          unless Rails.application.respond_to?(:secrets)
-            Rails.application.define_singleton_method(:secrets) do
-              @secrets ||= begin
-                current_secrets = ActiveSupport::OrderedOptions.new
-                # Re-read secrets to ensure we have the right environment
-                env_secrets = Secvault::Secrets.read_secrets(secrets_path, Rails.env)
-                current_secrets.merge!(env_secrets) if env_secrets
-                current_secrets
-              end
+        return unless secrets
+
+        # Rails 8.0+ compatibility: Add secrets accessor that initializes on first access
+        unless Rails.application.respond_to?(:secrets)
+          Rails.application.define_singleton_method(:secrets) do
+            @secrets ||= begin
+              current_secrets = ActiveSupport::OrderedOptions.new
+              # Re-read secrets to ensure we have the right environment
+              env_secrets = Secvault::Secrets.read_secrets(secrets_path, Rails.env)
+              current_secrets.merge!(env_secrets) if env_secrets
+              current_secrets
             end
           end
-
-          # If secrets accessor already exists, merge the secrets
-          if Rails.application.respond_to?(:secrets) && Rails.application.secrets.respond_to?(:merge!)
-            Rails.application.secrets.merge!(secrets)
-          end
         end
+
+        # If secrets accessor already exists, merge the secrets
+        return unless Rails.application.respond_to?(:secrets) && Rails.application.secrets.respond_to?(:merge!)
+
+        Rails.application.secrets.merge!(secrets)
       end
 
       # Classic Rails::Secrets.parse implementation
@@ -102,14 +88,6 @@ module Secvault
         end
 
         {}
-      end
-
-      private
-
-      def rails_7_2_or_later?
-        rails_version = Rails.version
-        major, minor = rails_version.split(".").map(&:to_i)
-        major > 7 || (major == 7 && minor >= 2)
       end
     end
   end

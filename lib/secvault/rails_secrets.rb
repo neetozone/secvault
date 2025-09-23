@@ -46,15 +46,9 @@ module Secvault
 end
 
 # Monkey patch to restore Rails::Secrets interface for backwards compatibility
-# Only for Rails 7.2+ where Rails::Secrets was removed
-if defined?(Rails) && Rails.respond_to?(:version)
-  rails_version = Rails.version
-  major, minor = rails_version.split(".").map(&:to_i)
-
-  # Only alias for Rails 7.2+ to avoid conflicts with native Rails::Secrets in 7.1
-  if major > 7 || (major == 7 && minor >= 2)
-    module Rails
-      Secrets = Secvault::RailsSecrets
-    end
+# Works consistently across all Rails versions with warning suppression
+if defined?(Rails)
+  module Rails
+    Secrets = Secvault::RailsSecrets
   end
 end

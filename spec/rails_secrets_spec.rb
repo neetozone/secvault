@@ -18,9 +18,7 @@ class MockRails
 end
 
 # Set up Rails constant for testing
-unless defined?(Rails)
-  Rails = MockRails
-end
+Rails = MockRails unless defined?(Rails)
 
 RSpec.describe Secvault::RailsSecrets do
   let(:temp_dir) { nil }
