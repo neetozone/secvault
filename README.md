@@ -47,7 +47,7 @@ Secvault.secrets.app_name
 Secvault.start!(
   files: ['config/secrets.yml'],     # Files to load (later files override earlier ones)
   integrate_with_rails: false,       # Add Rails.application.secrets
-  set_secret_key_base: true,         # Set Rails secret_key_base
+  set_secret_key_base: true,         # Auto-set Rails.application.config.secret_key_base from secrets
   hot_reload: true,                  # Auto-reload in development
   logger: true                       # Log loading activity
 )
@@ -63,6 +63,13 @@ Secvault.start!(files: ['secrets.yml', 'local.yml'])
 ```ruby
 Secvault.start!(integrate_with_rails: true)
 Rails.application.secrets.api_key  # Now available
+```
+
+**Secret key base:**
+```ruby
+# If your secrets.yml has secret_key_base, it's automatically set
+# This replaces the need for Rails.application.config.secret_key_base
+Secvault.start!(set_secret_key_base: true)  # Default behavior
 ```
 
 
