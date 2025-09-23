@@ -1,6 +1,6 @@
 # Secvault
 
-Secvault restores the classic Rails `secrets.yml` functionality using simple, plain YAML files for environment-specific secrets management. Compatible with all modern Rails versions (7.1+, 7.2+, 8.0+) with automatic deprecation warning suppression.
+Secvault restores the classic Rails `secrets.yml` functionality using simple, plain YAML files for environment-specific secrets management. Compatible with all modern Rails versions (7.1+, 7.2+, 8.0+).
 
 [![Gem Version](https://img.shields.io/gem/v/secvault.svg)](https://rubygems.org/gems/secvault)
 
@@ -8,7 +8,6 @@ Secvault restores the classic Rails `secrets.yml` functionality using simple, pl
 
 - **Drop-in replacement** for Rails 7.2+'s removed `secrets.yml` functionality
 - **Universal compatibility** across Rails 7.1+, 7.2+, and 8.0+
-- **Automatic warning suppression** - no more deprecation warnings
 - **ERB templating** support for environment variables
 - **Multi-file support** with deep merging capabilities
 - **Shared sections** for common configuration across environments
@@ -83,7 +82,6 @@ Secvault.setup!
 
 # With options
 Secvault.setup!(
-  suppress_warnings: true,      # Default: true
   set_secret_key_base: true     # Default: true
 )
 ```
@@ -103,7 +101,6 @@ Secvault.setup_multi_file!([
 # With full options
 Secvault.setup_multi_file!(
   ['config/secrets.yml', 'config/secrets.local.yml'],
-  suppress_warnings: true,      # Default: true
   set_secret_key_base: true,    # Default: true
   reload_method: true,          # Default: true in development
   logger: true                  # Default: true except in production
@@ -231,24 +228,6 @@ Secvault.rails_integrated?  # => true/false
 Secvault.secrets.api_key  # Available after Secvault.start!
 ```
 
-## Deprecation Warning Suppression
-
-**Secvault automatically suppresses Rails deprecation warnings** about `secrets.yml` usage. This provides:
-
-- **Clean logs** - No more deprecation warnings cluttering your development/test output
-- **Universal compatibility** - Works consistently across all Rails versions
-- **Performance** - Avoids Rails' internal deprecation handling overhead
-
-You can control this behavior:
-
-```ruby
-# Disable automatic warning suppression
-Secvault.setup!(suppress_warnings: false)
-
-# Or for multi-file setup
-Secvault.setup_multi_file!(['config/secrets.yml'], suppress_warnings: false)
-```
-
 ## Rails Version Compatibility
 
 | Rails Version | Support Level | Notes |
@@ -261,7 +240,7 @@ Secvault.setup_multi_file!(['config/secrets.yml'], suppress_warnings: false)
 Rails 7.2 removed the built-in `secrets.yml` functionality. Secvault provides a complete replacement with the same API.
 
 ### Rails 7.1 Notes
-Rails 7.1 still has `secrets.yml` support but shows deprecation warnings. Secvault suppresses these warnings and provides a consistent experience.
+Rails 7.1 still has `secrets.yml` support but shows deprecation warnings. Secvault provides a consistent experience across Rails versions.
 
 ## Migration Guide
 
@@ -422,7 +401,7 @@ Rails.application.secrets  # Should show your secrets
 
 ### Setup Methods
 
-- `Secvault.setup!(suppress_warnings: true, set_secret_key_base: true)`
+- `Secvault.setup!(set_secret_key_base: true)`
 - `Secvault.setup_multi_file!(files, **options)`
 - `Secvault.start!(files: [], logger: true)` 
 - `Secvault.integrate_with_rails!`

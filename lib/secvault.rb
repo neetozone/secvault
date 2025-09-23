@@ -15,7 +15,7 @@ loader.setup
 #
 # Secvault restores the classic Rails secrets.yml functionality using simple,
 # plain YAML files for environment-specific secrets management. Works consistently
-# across all Rails versions with automatic deprecation warning suppression.
+# across all Rails versions.
 #
 # ## Rails Version Support:
 # - Rails 7.1+: Full compatibility with automatic setup
@@ -76,24 +76,19 @@ module Secvault
   #
   # Usage in an initializer:
   #   Secvault.setup!
-  #   Secvault.setup!(suppress_warnings: false)
   #
   # This will:
   # 1. Set up Rails::Secrets with Secvault implementation
   # 2. Replace Rails.application.secrets with Secvault-powered functionality
   # 3. Load secrets from config/secrets.yml automatically
-  # 4. Suppress Rails deprecation warnings about secrets (default: true)
-  # 5. Set Rails.application.config.secret_key_base from secrets (default: true)
-  def setup!(suppress_warnings: true, set_secret_key_base: true)
+  # 4. Set Rails.application.config.secret_key_base from secrets (default: true)
+  def setup!(set_secret_key_base: true)
     # Override native Rails::Secrets
     Rails.send(:remove_const, :Secrets) if defined?(Rails::Secrets)
     Rails.const_set(:Secrets, Secvault::RailsSecrets)
 
     # Set up Rails.application.secrets replacement
     Rails.application.config.after_initialize do
-      # Suppress Rails deprecation warnings about secrets if requested
-      suppress_secrets_deprecation_warning! if suppress_warnings
-
       secrets_path = Rails.root.join("config/secrets.yml")
 
       if secrets_path.exist?
@@ -141,12 +136,11 @@ module Secvault
   #   - files: Array of file paths (String or Pathname)
   #   - reload_method: Add a reload helper method (default: true in development)
   #   - logger: Enable/disable logging (default: true except in production)
-  #   - suppress_warnings: Suppress Rails deprecation warnings about secrets (default: true)
   #   - set_secret_key_base: Set Rails.application.config.secret_key_base from secrets (default: true)
   def setup_multi_file!(files, reload_method: Rails.env.development?, logger: !Rails.env.production?,
-    suppress_warnings: true, set_secret_key_base: true)
+    set_secret_key_base: true)
     # Ensure Secvault integration is active
-    setup!(suppress_warnings: suppress_warnings, set_secret_key_base: set_secret_key_base) unless active?
+    setup!(set_secret_key_base: set_secret_key_base) unless active?
 
     # Convert strings to Pathname objects and resolve relative to Rails.root
     file_paths = Array(files).map do |file|
@@ -155,8 +149,7 @@ module Secvault
 
     # Set up the multi-file loading
     Rails.application.config.after_initialize do
-      load_multi_file_secrets!(file_paths, logger: logger, suppress_warnings: suppress_warnings,
-        set_secret_key_base: set_secret_key_base)
+      load_multi_file_secrets!(file_paths, logger: logger, set_secret_key_base: set_secret_key_base)
     end
 
     # Add reload helper in development
@@ -198,14 +191,11 @@ module Secvault
   end
 
   # Load secrets from multiple files and merge them (with Rails integration)
-  def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?, suppress_warnings: true,
+  def load_multi_file_secrets!(file_paths, logger: !Rails.env.production?,
     set_secret_key_base: true)
     existing_files = file_paths.select(&:exist?)
 
     if existing_files.any?
-      # Suppress Rails deprecation warnings about secrets if requested
-      suppress_secrets_deprecation_warning! if suppress_warnings
-
       # Load and merge all secrets files
       merged_secrets = Rails::Secrets.parse(existing_files, env: Rails.env)
 
