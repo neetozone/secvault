@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "active_support/core_ext/hash/keys"
+require "active_support/core_ext/hash/deep_merge"
 require "active_support/ordered_options"
 require "pathname"
 require "erb"
@@ -89,9 +90,9 @@ module Secvault
           
           secrets ||= {}
           
-          # Merge shared secrets first, then environment-specific
-          all_secrets.merge!(secrets["shared"].deep_symbolize_keys) if secrets["shared"]
-          all_secrets.merge!(secrets[env].deep_symbolize_keys) if secrets[env]
+          # Merge shared secrets first, then environment-specific (using deep merge)
+          all_secrets.deep_merge!(secrets["shared"].deep_symbolize_keys) if secrets["shared"]
+          all_secrets.deep_merge!(secrets[env].deep_symbolize_keys) if secrets[env]
         end
       end
 
