@@ -35,8 +35,8 @@ production:
 
 **3. Use in your app:**
 ```ruby
-Rails.application.secrets.api_key
-Rails.application.secrets.app_name
+Secvault.secrets.api_key
+Secvault.secrets.app_name
 ```
 
 ## Options
@@ -44,21 +44,33 @@ Rails.application.secrets.app_name
 ```ruby
 Secvault.start!(
   files: ['config/secrets.yml'],           # Default
-  integrate_with_rails: true,              # Default: true
+  integrate_with_rails: false,             # Default: false
   set_secret_key_base: true,              # Default: true
   hot_reload: true,                       # Default: true in development
   logger: true                            # Default: true except production
 )
 ```
 
+**Primary access (default):**
+```ruby
+Secvault.secrets.api_key
+Secvault.secrets.app_name
+```
+
+**Rails integration (optional):**
+```ruby
+# Enable Rails.application.secrets access
+Secvault.start!(integrate_with_rails: true)
+
+# Then use either:
+Secvault.secrets.api_key          # Direct access
+Rails.application.secrets.api_key # Rails integration
+```
+
 **Examples:**
 ```ruby
 # Multiple files
 Secvault.start!(files: ['secrets.yml', 'local.yml'])
-
-# Standalone mode (no Rails integration)
-Secvault.start!(integrate_with_rails: false)
-# Access via: Secvault.secrets.your_key
 ```
 
 
@@ -76,10 +88,13 @@ production:
 ```yaml
 shared:
   app_name: "MyApp"
-  timeout: 30
+  features:
+    analytics: true
 
 development:
   secret_key_base: "dev_secret"
+  features:
+    debug: true  # Merges with shared.features
 ```
 
 **Hot reload (development):**
@@ -97,23 +112,6 @@ Secvault.active?           # => true/false
 Secvault.rails_integrated? # => true/false
 ```
 
-## Migration
-
-**From Secvault < 3.0:**
-```ruby
-# Old API
-Secvault.setup!
-Secvault.setup_multi_file!(['file1.yml', 'file2.yml'])
-
-# New API
-Secvault.start!
-Secvault.start!(files: ['file1.yml', 'file2.yml'])
-```
-
-**Rails versions:**
-- **7.1+**: Full compatibility
-- **7.2+**: Drop-in replacement for removed functionality  
-- **8.0+**: Full compatibility
 
 ## License
 

@@ -88,11 +88,11 @@ module Secvault
   #
   # Options:
   #   - files: Array of file paths (String or Pathname). Defaults to ['config/secrets.yml']
-  #   - integrate_with_rails: Integrate with Rails.application.secrets (default: true)
+  #   - integrate_with_rails: Integrate with Rails.application.secrets (default: false)
   #   - set_secret_key_base: Set Rails.application.config.secret_key_base from secrets (default: true)
   #   - hot_reload: Add reload_secrets! methods for development (default: true in development)
   #   - logger: Enable logging (default: true except production)
-  def start!(files: [], integrate_with_rails: true, set_secret_key_base: true, 
+  def start!(files: [], integrate_with_rails: false, set_secret_key_base: true, 
              hot_reload: (defined?(Rails) && Rails.env.respond_to?(:development?) ? Rails.env.development? : false), 
              logger: (defined?(Rails) && Rails.env.respond_to?(:production?) ? !Rails.env.production? : true))
     
