@@ -212,4 +212,55 @@ module Secvault
 
 end
 
-Secvault.install! if defined?(Rails)
+# Auto-install and setup when Rails is available
+if defined?(Rails)
+  Secvault.install!
+  
+  # Immediate setup for early access during application loading
+  begin
+    # Try to detect and load secrets immediately if Rails.root is available
+    if Rails.respond_to?(:root) && Rails.root
+      # Look for default secrets or configuration
+      default_secrets_file = Rails.root.join("config/secrets.yml")
+      commons_secrets_file = nil
+      
+      # Check for neeto-commons-backend integration
+      if defined?(NeetoCommonsBackend) && NeetoCommonsBackend.respond_to?(:shared_secrets_file)
+        commons_secrets_file = NeetoCommonsBackend.shared_secrets_file
+      end
+      
+      files_to_load = [commons_secrets_file, default_secrets_file].compact.select(&:exist?)
+      
+      if files_to_load.any? && Rails.respond_to?(:env)
+        # Load secrets immediately
+        all_secrets = Secvault::Secrets.parse(files_to_load, env: Rails.env)
+        
+        # Set up Rails.application.secrets if Rails.application exists
+        if Rails.respond_to?(:application) && Rails.application
+          Rails.application.define_singleton_method(:secrets) do
+            @secrets ||= begin
+              current_secrets = ActiveSupport::OrderedOptions.new
+              current_secrets.merge!(all_secrets)
+              current_secrets
+            end
+          end
+        else
+          # Create a minimal Rails.application for early access
+          temp_app = Object.new
+          temp_app.define_singleton_method(:secrets) do
+            @secrets ||= begin
+              current_secrets = ActiveSupport::OrderedOptions.new
+              current_secrets.merge!(all_secrets)
+              current_secrets
+            end
+          end
+          
+          Rails.define_singleton_method(:application) { temp_app } unless Rails.respond_to?(:application)
+        end
+      end
+    end
+  rescue => e
+    # Silent fail - normal initialization will handle it
+    warn "[Secvault] Early auto-load failed: #{e.message}" unless Rails.env&.production?
+  end
+end
