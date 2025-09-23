@@ -65,6 +65,67 @@ module Secvault
     defined?(Rails) && Rails::Secrets == Secvault::RailsSecrets
   end
 
+  # Early setup method for use in config/application.rb before other configuration
+  # This ensures Rails.application has secrets available during application class definition
+  def setup_early_application_secrets!(files: nil, application_class: nil)
+    return false unless defined?(Rails)
+    
+    # Default files if not provided
+    files ||= begin
+      default_files = ["config/secrets.yml"]
+      
+      # Add neeto-commons-backend file if available
+      if defined?(NeetoCommonsBackend) && NeetoCommonsBackend.respond_to?(:shared_secrets_file)
+        default_files.unshift(NeetoCommonsBackend.shared_secrets_file)
+      end
+      
+      default_files
+    end
+    
+    # Create a temporary Rails.application if it doesn't exist
+    unless Rails.respond_to?(:application) && Rails.application
+      # Create a temporary application-like object with secrets
+      temp_app = Object.new
+      
+      # Add lazy secrets loading
+      temp_app.define_singleton_method(:secrets) do
+        @secrets ||= begin
+          # Convert to full paths and filter existing files
+          file_paths = files.map do |file|
+            file.is_a?(Pathname) ? file : Rails.root.join(file)
+          end.select(&:exist?)
+          
+          if file_paths.any?
+            # Load secrets using Secvault
+            all_secrets = Secvault::Secrets.parse(file_paths, env: Rails.env)
+            current_secrets = ActiveSupport::OrderedOptions.new
+            current_secrets.merge!(all_secrets)
+            current_secrets
+          else
+            # Return empty secrets if no files found but include encryption structure
+            secrets = ActiveSupport::OrderedOptions.new
+            secrets.encryption = ActiveSupport::OrderedOptions.new
+            secrets.encryption.primary_key = nil
+            secrets.encryption.deterministic_key = nil
+            secrets.encryption.key_derivation_salt = nil
+            secrets
+          end
+        end
+      end
+      
+      # Set up Rails.application to point to this temporary object
+      Rails.define_singleton_method(:application) { temp_app }
+    end
+    
+    true
+  rescue => e
+    warn "[Secvault] Early application secrets setup failed: #{e.message}"
+    false
+  end
+  
+  # Alias for backward compatibility
+  alias_method :setup_early_secrets!, :setup_early_application_secrets!
+
   def install!
     return if defined?(Rails::Railtie).nil?
 
