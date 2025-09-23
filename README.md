@@ -32,7 +32,7 @@ Create `config/initializers/secvault.rb`:
 
 ```ruby
 # The simplest setup - works across all Rails versions
-Secvault.setup!
+Secvault.start!
 ```
 
 Create `config/secrets.yml`:
@@ -74,54 +74,52 @@ Rails.application.secrets.features.analytics
 
 ## Setup Methods
 
-### Universal Setup
+### Unified start! Method
+
+Secvault now uses a single, simplified `start!` method for all use cases:
 
 ```ruby
-# Works for all Rails versions with sensible defaults
-Secvault.setup!
+# Simplest setup - loads config/secrets.yml with Rails integration
+Secvault.start!
 
-# With options
-Secvault.setup!(
-  set_secret_key_base: true     # Default: true
+# Custom single file
+Secvault.start!(files: ['custom.yml'])
+
+# Multiple files with hot reload
+Secvault.start!(
+  files: ['config/secrets.yml', 'config/secrets.local.yml'],
+  hot_reload: true
+)
+
+# All available options
+Secvault.start!(
+  files: ['config/secrets.yml'],           # Default: ['config/secrets.yml']
+  integrate_with_rails: true,              # Default: true
+  set_secret_key_base: true,              # Default: true
+  hot_reload: true,                       # Default: true in development
+  logger: true                            # Default: true except production
 )
 ```
 
-### Multi-File Setup
-
-Perfect for organizing secrets across multiple files:
+### Advanced Usage
 
 ```ruby
-# Load and merge multiple secrets files
-Secvault.setup_multi_file!([
-  'config/secrets.yml',
-  'config/secrets.oauth.yml', 
-  'config/secrets.local.yml'   # Git-ignored local overrides
-])
+# Load without Rails integration (standalone mode)
+Secvault.start!(integrate_with_rails: false)
+# Access via: Secvault.secrets.your_key
 
-# With full options
-Secvault.setup_multi_file!(
-  ['config/secrets.yml', 'config/secrets.local.yml'],
-  set_secret_key_base: true,    # Default: true
-  reload_method: true,          # Default: true in development
-  logger: true                  # Default: true except in production
+# Multi-file with hot reload for development
+Secvault.start!(
+  files: [
+    'config/secrets.yml',
+    'config/secrets.oauth.yml', 
+    'config/secrets.local.yml'   # Git-ignored local overrides
+  ],
+  hot_reload: true,
+  logger: true
 )
 ```
 
-### Standalone Usage (Advanced)
-
-For cases where you want to load secrets without Rails integration:
-
-```ruby
-# Load secrets into Secvault.secrets without Rails integration
-Secvault.start!(files: ['config/secrets.yml'])
-
-# Access via Secvault.secrets instead of Rails.application.secrets
-Secvault.secrets.api_key
-Secvault.secrets.database_url
-
-# Integrate with Rails later if needed
-Secvault.integrate_with_rails!
-```
 
 ## Advanced Features
 
@@ -195,17 +193,22 @@ Secvault.setup_multi_file!([
 - Deep merging for nested hashes
 - Shared sections are merged first, then environment-specific
 
-### Development Helpers
+### Hot Reload (Development)
 
-In development mode, Secvault provides helpful reload methods:
+Secvault provides hot reload functionality for development:
 
 ```ruby
-# Reload secrets without restarting Rails
+# Enable hot reload when starting Secvault
+Secvault.start!(hot_reload: true)  # Default: true in development
+
+# Then reload secrets without restarting Rails
 reload_secrets!
 
 # Or via Rails.application
 Rails.application.reload_secrets!
 ```
+
+Hot reload is automatically enabled in development mode and provides instant feedback when you change your secrets files.
 
 ## Manual API
 
@@ -244,6 +247,22 @@ Rails 7.1 still has `secrets.yml` support but shows deprecation warnings. Secvau
 
 ## Migration Guide
 
+### From Previous Secvault Versions
+
+**BREAKING CHANGE**: The API has been simplified. Update your initializers:
+
+```ruby
+# Old API (no longer supported):
+Secvault.setup!
+Secvault.setup_multi_file!(['file1.yml', 'file2.yml'])
+Secvault.integrate_with_rails!
+
+# New unified API:
+Secvault.start!                                     # Simple case
+Secvault.start!(files: ['file1.yml', 'file2.yml'])  # Multi-file case
+Secvault.start!(integrate_with_rails: false)        # Standalone mode
+```
+
 ### From Rails < 7.2 Built-in Secrets
 
 1. **Add Secvault to your Gemfile**:
@@ -254,7 +273,7 @@ Rails 7.1 still has `secrets.yml` support but shows deprecation warnings. Secvau
 2. **Create initializer**:
    ```ruby
    # config/initializers/secvault.rb
-   Secvault.setup!
+   Secvault.start!
    ```
 
 3. **Your existing `config/secrets.yml` works as-is** - no changes needed!
@@ -281,7 +300,7 @@ Rails 7.1 still has `secrets.yml` support but shows deprecation warnings. Secvau
 3. **Set up Secvault**:
    ```ruby
    # config/initializers/secvault.rb
-   Secvault.setup!
+   Secvault.start!
    ```
 
 ## Configuration Examples
@@ -310,12 +329,15 @@ production:
 
 ```ruby
 # config/initializers/secvault.rb
-Secvault.setup_multi_file!([
-  'config/secrets.yml',
-  'config/secrets.oauth.yml',
-  'config/secrets.external_apis.yml',
-  'config/secrets.local.yml'  # Git-ignored
-])
+Secvault.start!(
+  files: [
+    'config/secrets.yml',
+    'config/secrets.oauth.yml',
+    'config/secrets.external_apis.yml',
+    'config/secrets.local.yml'  # Git-ignored
+  ],
+  hot_reload: true
+)
 ```
 
 ```yaml
@@ -368,13 +390,13 @@ touch config/secrets.yml
 ```ruby
 # Make sure Secvault is set up in an initializer
 # config/initializers/secvault.rb
-Secvault.setup!
+Secvault.start!
 ```
 
 **3. "Secrets not loading in tests"**
 ```ruby
 # In your test helper or rails_helper.rb
-Secvault.setup! if defined?(Secvault)
+Secvault.start! if defined?(Secvault)
 ```
 
 **4. "Environment variables not working"**
@@ -389,7 +411,7 @@ production:
 
 ```ruby
 # Enable detailed logging (development/test only)
-Secvault.setup_multi_file!(['config/secrets.yml'], logger: true)
+Secvault.start!(files: ['config/secrets.yml'], logger: true)
 
 # Check if Secvault is working
 Secvault.active?           # Should return true
@@ -401,10 +423,7 @@ Rails.application.secrets  # Should show your secrets
 
 ### Setup Methods
 
-- `Secvault.setup!(set_secret_key_base: true)`
-- `Secvault.setup_multi_file!(files, **options)`
-- `Secvault.start!(files: [], logger: true)` 
-- `Secvault.integrate_with_rails!`
+- `Secvault.start!(files: [], integrate_with_rails: true, set_secret_key_base: true, hot_reload: auto, logger: auto)` - Main and only setup method
 
 ### Status Methods
 
