@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, using simple, plain YAML files for environment-specific secrets management. Compatible with Rails 7.1+, 7.2+ and 8.0+."
   spec.homepage = "https://github.com/unnitallman/secvault"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.0.0"
+  spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
