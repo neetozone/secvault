@@ -267,9 +267,6 @@ module Secvault
 
     Rails.logger&.info "[Secvault] Hot reload enabled. Use reload_secrets! to refresh secrets." unless defined?(Rails) && Rails.env.respond_to?(:production?) && Rails.env.production?
   end
-
-  public
-
 end
 
 # Auto-install and setup when Rails is available

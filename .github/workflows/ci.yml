@@ -33,12 +33,12 @@ jobs:
         mkdir -p tmp
         bundle exec rspec --format progress --format RspecJunitFormatter --out tmp/rspec.xml
     
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: rspec-results-${{ matrix.ruby-version }}
-        path: tmp/rspec.xml
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.ruby }}
+          path: tmp/rspec_results.xml
 
   lint:
     runs-on: ubuntu-latest
