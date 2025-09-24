@@ -3,6 +3,7 @@
 Simple YAML secrets management for Rails. Uses standard YAML anchors for sharing configuration.
 
 [![Gem Version](https://img.shields.io/gem/v/secvault.svg)](https://rubygems.org/gems/secvault)
+[![CI](https://github.com/unnitallman/secvault/actions/workflows/ci.yml/badge.svg)](https://github.com/unnitallman/secvault/actions/workflows/ci.yml)
 
 ## Installation
 

@@ -36,6 +36,9 @@ Gem::Specification.new do |spec|
   # Rails 7.1+, 7.2+ and 8.0+ dependency
   spec.add_dependency "rails", ">= 7.1.0"
   spec.add_dependency "zeitwerk", "~> 2.6"
+  
+  # Development dependencies for testing
+  spec.add_development_dependency "rspec_junit_formatter", "~> 0.6"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

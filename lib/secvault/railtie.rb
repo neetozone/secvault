@@ -8,23 +8,23 @@ if defined?(Rails)
   unless Rails.respond_to?(:application) && Rails.application.respond_to?(:secrets)
     # Create a minimal application-like object
     temp_app = Object.new
-    
+
     # Add secrets method with default empty secrets that include needed encryption keys
     temp_app.define_singleton_method(:secrets) do
       @secrets ||= begin
         secrets = ActiveSupport::OrderedOptions.new
-        
+
         # Add empty encryption section to prevent NoMethodError
         secrets.encryption = {
           primary_key: nil,
-          deterministic_key: nil, 
+          deterministic_key: nil,
           key_derivation_salt: nil
         }
-        
+
         secrets
       end
     end
-    
+
     # Set up Rails.application if it doesn't exist
     Rails.define_singleton_method(:application) { temp_app } unless Rails.respond_to?(:application)
   end
@@ -49,7 +49,7 @@ module Secvault
     class << self
       def setup_early_secrets(app)
         puts "[Secvault Debug] setup_early_secrets called" unless Rails.env.production?
-        
+
         if Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
           puts "[Secvault Debug] Secrets already exist, skipping early load" unless Rails.env.production?
           return
@@ -64,7 +64,7 @@ module Secvault
           # Load secrets using the configuration found
           all_secrets = Secvault::Secrets.parse(secrets_config[:files], env: Rails.env)
           puts "[Secvault Debug] Loaded secrets keys: #{all_secrets.keys}" unless Rails.env.production?
-          
+
           # Set up Rails.application.secrets immediately
           Rails.application.define_singleton_method(:secrets) do
             @secrets ||= begin
@@ -74,7 +74,7 @@ module Secvault
               current_secrets
             end
           end
-          
+
           # Test the secrets immediately
           test_encryption = Rails.application.secrets.encryption
           puts "[Secvault Debug] Test access - encryption: #{test_encryption.class} - #{test_encryption}" unless Rails.env.production?
@@ -96,14 +96,14 @@ module Secvault
 
         config_locations.each do |config_file|
           next unless config_file.exist?
-          
+
           config = parse_secvault_config(config_file)
           return config if config
         end
 
         # Fallback to default configuration
         default_files = [app.root.join("config/secrets.yml")]
-        
+
         # Check if neeto-commons-backend is available for default config
         if defined?(NeetoCommonsBackend) && NeetoCommonsBackend.respond_to?(:shared_secrets_file)
           default_files.unshift(NeetoCommonsBackend.shared_secrets_file)
@@ -111,7 +111,7 @@ module Secvault
 
         # Only return default if at least one file exists
         existing_files = default_files.select(&:exist?)
-        return { files: existing_files } if existing_files.any?
+        return {files: existing_files} if existing_files.any?
 
         nil
       end
@@ -119,29 +119,29 @@ module Secvault
       def parse_secvault_config(config_file)
         # Read the configuration file and extract Secvault.start! parameters
         content = config_file.read
-        
+
         # Look for Secvault.start! calls
-        if content.match(/Secvault\.start!\s*\(/m)
+        if /Secvault\.start!\s*\(/m.match?(content)
           # Try to extract the files parameter using a simple regex
           files_match = content.match(/files:\s*\[(.*?)\]/m)
           if files_match
             # Parse the files array (basic string parsing)
             files_content = files_match[1]
             files = []
-            
+
             # Handle various file specification patterns
-            files_content.scan(/["'](.*?)["']|([A-Za-z_][\w\.]*\([^)]*\))/) do |quoted, method_call|
+            files_content.scan(/["'](.*?)["']|([A-Za-z_][\w.]*\([^)]*\))/) do |quoted, method_call|
               if quoted
                 files << Rails.root.join(quoted.strip)
               elsif method_call
                 # Handle method calls like NeetoCommonsBackend.shared_secrets_file
-                if method_call.include?('NeetoCommonsBackend.shared_secrets_file') && defined?(NeetoCommonsBackend)
+                if method_call.include?("NeetoCommonsBackend.shared_secrets_file") && defined?(NeetoCommonsBackend)
                   files << NeetoCommonsBackend.shared_secrets_file
                 end
               end
             end
-            
-            return { files: files.compact } if files.any?
+
+            return {files: files.compact} if files.any?
           end
         end
 
