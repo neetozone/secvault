@@ -34,9 +34,9 @@ jobs:
         bundle exec rspec --format progress --format RspecJunitFormatter --out tmp/rspec.xml
     
     - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
           name: test-results-${{ matrix.ruby-version }}
           path: tmp/rspec.xml
 
