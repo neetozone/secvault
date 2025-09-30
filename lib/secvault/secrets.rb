@@ -6,9 +6,37 @@ require "active_support/ordered_options"
 require "pathname"
 require "erb"
 require "yaml"
+require "bigdecimal"
+require "date"
 
 module Secvault
   class Secrets
+    # Define permitted classes for YAML.safe_load - commonly used in Rails secrets
+    PERMITTED_YAML_CLASSES = [
+      Symbol,
+      Date,
+      Time,
+      DateTime,
+      BigDecimal,
+      Range,
+      Regexp
+    ].tap do |classes|
+      # Add ActiveSupport classes if available
+      begin
+        require 'active_support/time_with_zone'
+        classes << ActiveSupport::TimeWithZone
+      rescue LoadError
+        # ActiveSupport not available, skip
+      end
+
+      begin
+        require 'active_support/duration'
+        classes << ActiveSupport::Duration
+      rescue LoadError
+        # ActiveSupport not available, skip
+      end
+    end.freeze
+
     class << self
       def setup(app)
         # Auto-setup for all Rails versions with consistent behavior
@@ -68,7 +96,7 @@ module Secvault
 
           # Process ERB and parse YAML - using same method as Rails
           erb_result = ERB.new(source).result
-          secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result)
+          secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result, aliases: true, permitted_classes: PERMITTED_YAML_CLASSES)
 
           secrets ||= {}
 
@@ -81,7 +109,7 @@ module Secvault
         if secrets_path.exist?
           # Handle plain YAML secrets.yml only - using same method as Rails
           erb_result = ERB.new(secrets_path.read).result
-          all_secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result)
+          all_secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result, aliases: true, permitted_classes: PERMITTED_YAML_CLASSES)
 
           env_secrets = all_secrets[env.to_s]
           return env_secrets.deep_symbolize_keys if env_secrets
