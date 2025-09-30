@@ -23,14 +23,14 @@ module Secvault
     ].tap do |classes|
       # Add ActiveSupport classes if available
       begin
-        require 'active_support/time_with_zone'
+        require "active_support/time_with_zone"
         classes << ActiveSupport::TimeWithZone
       rescue LoadError
         # ActiveSupport not available, skip
       end
 
       begin
-        require 'active_support/duration'
+        require "active_support/duration"
         classes << ActiveSupport::Duration
       rescue LoadError
         # ActiveSupport not available, skip
