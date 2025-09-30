@@ -68,7 +68,7 @@ module Secvault
 
           # Process ERB and parse YAML - using same method as Rails
           erb_result = ERB.new(source).result
-          secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.load(erb_result)
+          secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result)
 
           secrets ||= {}
 
@@ -81,7 +81,7 @@ module Secvault
         if secrets_path.exist?
           # Handle plain YAML secrets.yml only - using same method as Rails
           erb_result = ERB.new(secrets_path.read).result
-          all_secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.load(erb_result)
+          all_secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result)
 
           env_secrets = all_secrets[env.to_s]
           return env_secrets.deep_symbolize_keys if env_secrets
