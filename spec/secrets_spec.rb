@@ -151,6 +151,18 @@ RSpec.describe Secvault::Secrets do
         expect(result[:api_key]).to eq("default_dev_key")
         expect(result[:database_url]).to be_nil
       end
+
+      it "handles unsafe environment variables gracefully" do
+        with_env_vars({
+          "DEV_API_KEY" => ",test_value",
+          "DATABASE_URL" => ":test_url"
+        }) do
+          result = described_class.parse([secrets_file], env: "development")
+
+          expect(result[:api_key]).to eq(",test_value")
+          expect(result[:database_url]).to eq(":test_url")
+        end 
+      end
     end
 
     context "with multiple files" do

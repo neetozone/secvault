@@ -11,6 +11,9 @@ require "date"
 
 module Secvault
   class Secrets
+    # Regexp to match unsafe environment variable values (comma, dash, and colon)
+    UNSAFE_ENV_VALUE_REGEXP = /^\s*[,:-]/
+
     # Define permitted classes for YAML.safe_load - commonly used in Rails secrets
     PERMITTED_YAML_CLASSES = [
       Symbol,
@@ -93,11 +96,8 @@ module Secvault
 
           # Read and process the plain YAML file content
           source = path.read
-
-          # Process ERB and parse YAML - using same method as Rails
-          erb_result = ERB.new(source).result
-          secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result, aliases: true, permitted_classes: PERMITTED_YAML_CLASSES)
-
+          
+          secrets = load_secrets_from_yaml(source)
           secrets ||= {}
 
           # Only load environment-specific section (YAML anchors handle sharing)
@@ -108,8 +108,8 @@ module Secvault
       def read_secrets(secrets_path, env)
         if secrets_path.exist?
           # Handle plain YAML secrets.yml only - using same method as Rails
-          erb_result = ERB.new(secrets_path.read).result
-          all_secrets = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result, aliases: true, permitted_classes: PERMITTED_YAML_CLASSES)
+          source = secrets_path.read
+          all_secrets = load_secrets_from_yaml(source)
 
           env_secrets = all_secrets[env.to_s]
           return env_secrets.deep_symbolize_keys if env_secrets
@@ -117,6 +117,37 @@ module Secvault
 
         {}
       end
+
+      private
+
+        def load_secrets_from_yaml(source)
+          # Process ERB and parse YAML - using same method as Rails but with safe env wrapper
+          
+          erb_result = nil
+          with_safe_env do
+            erb_result = ERB.new(source).result
+          end
+
+          YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(erb_result) : YAML.safe_load(erb_result, aliases: true, permitted_classes: PERMITTED_YAML_CLASSES)
+        end
+
+        def with_safe_env
+          original_env_method = ENV.method(:[])
+
+          ENV.define_singleton_method(:[]) do |key|
+            value = original_env_method.call(key)
+
+            return value if value.nil? || value.strip == ''
+
+            return "\"#{value}\"" if value =~ UNSAFE_ENV_VALUE_REGEXP
+
+            value
+          end
+          
+          yield
+        ensure
+          ENV.define_singleton_method(:[], original_env_method)
+        end
     end
   end
 end
