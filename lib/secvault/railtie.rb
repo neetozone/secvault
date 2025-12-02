@@ -48,38 +48,38 @@ module Secvault
   class EarlyLoader
     class << self
       def setup_early_secrets(app)
-        puts "[Secvault Debug] setup_early_secrets called" unless Rails.env.production?
+        puts "[Secvault Debug] setup_early_secrets called" if debug_secvault?
 
         if Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
-          puts "[Secvault Debug] Secrets already exist, skipping early load" unless Rails.env.production?
+          puts "[Secvault Debug] Secrets already exist, skipping early load" if debug_secvault?
           return
         end
 
         # Look for Secvault configuration in the app
         secrets_config = find_secvault_config(app)
-        puts "[Secvault Debug] Found config: #{secrets_config&.keys}" unless Rails.env.production?
+        puts "[Secvault Debug] Found config: #{secrets_config&.keys}" if debug_secvault?
         return unless secrets_config
 
         begin
           # Load secrets using the configuration found
           all_secrets = Secvault::Secrets.parse(secrets_config[:files], env: Rails.env)
-          puts "[Secvault Debug] Loaded secrets keys: #{all_secrets.keys}" unless Rails.env.production?
+          puts "[Secvault Debug] Loaded secrets keys: #{all_secrets.keys}" if debug_secvault?
 
           # Set up Rails.application.secrets immediately
           Rails.application.define_singleton_method(:secrets) do
             @secrets ||= begin
               current_secrets = ActiveSupport::OrderedOptions.new
               current_secrets.merge!(all_secrets)
-              puts "[Secvault Debug] Returning secrets with encryption: #{current_secrets.encryption}" unless Rails.env.production?
+              puts "[Secvault Debug] Returning secrets with encryption: #{current_secrets.encryption}" if debug_secvault?
               current_secrets
             end
           end
 
           # Test the secrets immediately
           test_encryption = Rails.application.secrets.encryption
-          puts "[Secvault Debug] Test access - encryption: #{test_encryption.class} - #{test_encryption}" unless Rails.env.production?
+          puts "[Secvault Debug] Test access - encryption: #{test_encryption.class} - #{test_encryption}" if debug_secvault?
 
-          Rails.logger&.info "[Secvault] Early secrets loaded from #{secrets_config[:files].size} files" unless Rails.env.production?
+          Rails.logger&.info "[Secvault] Early secrets loaded from #{secrets_config[:files].size} files" if debug_secvault?
         rescue => e
           Rails.logger&.warn "[Secvault] Failed to load early secrets: #{e.message}"
         end
@@ -149,6 +149,10 @@ module Secvault
       rescue => e
         Rails.logger&.warn "[Secvault] Failed to parse config file #{config_file}: #{e.message}"
         nil
+      end
+
+      def debug_secvault?
+        ENV["DEBUG_SECVAULT"] == "true"
       end
     end
   end
