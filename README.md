@@ -1,6 +1,6 @@
 # Secvault
 
-Simple YAML secrets management for Rails. Uses standard YAML anchors for sharing configuration.
+Rails secrets.yml functionality for Rails 7.2+. Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, allowing you to manage secrets using the familiar YAML-based approach.
 
 [![Gem Version](https://img.shields.io/gem/v/secvault.svg)](https://rubygems.org/gems/secvault)
 [![CI](https://github.com/unnitallman/secvault/actions/workflows/ci.yml/badge.svg)](https://github.com/unnitallman/secvault/actions/workflows/ci.yml)
