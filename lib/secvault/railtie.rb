@@ -48,38 +48,41 @@ module Secvault
   class EarlyLoader
     class << self
       def setup_early_secrets(app)
-        puts "[Secvault Debug] setup_early_secrets called" if debug_secvault?
+        # Captured in a local variable because `define_singleton_method` below binds
+        # `self` to `Rails.application`, which doesn't have `debug_secvault?`.
+        in_debug_mode = debug_secvault?
+        puts "[Secvault Debug] setup_early_secrets called" if in_debug_mode
 
         if Rails.application.respond_to?(:secrets) && !Rails.application.secrets.empty?
-          puts "[Secvault Debug] Secrets already exist, skipping early load" if debug_secvault?
+          puts "[Secvault Debug] Secrets already exist, skipping early load" if in_debug_mode
           return
         end
 
         # Look for Secvault configuration in the app
         secrets_config = find_secvault_config(app)
-        puts "[Secvault Debug] Found config: #{secrets_config&.keys}" if debug_secvault?
+        puts "[Secvault Debug] Found config: #{secrets_config&.keys}" if in_debug_mode
         return unless secrets_config
 
         begin
           # Load secrets using the configuration found
           all_secrets = Secvault::Secrets.parse(secrets_config[:files], env: Rails.env)
-          puts "[Secvault Debug] Loaded secrets keys: #{all_secrets.keys}" if debug_secvault?
+          puts "[Secvault Debug] Loaded secrets keys: #{all_secrets.keys}" if in_debug_mode
 
           # Set up Rails.application.secrets immediately
           Rails.application.define_singleton_method(:secrets) do
             @secrets ||= begin
               current_secrets = ActiveSupport::OrderedOptions.new
               current_secrets.merge!(all_secrets)
-              puts "[Secvault Debug] Returning secrets with encryption: #{current_secrets.encryption}" if debug_secvault?
+              puts "[Secvault Debug] Returning secrets with encryption: #{current_secrets.encryption}" if in_debug_mode
               current_secrets
             end
           end
 
           # Test the secrets immediately
           test_encryption = Rails.application.secrets.encryption
-          puts "[Secvault Debug] Test access - encryption: #{test_encryption.class} - #{test_encryption}" if debug_secvault?
+          puts "[Secvault Debug] Test access - encryption: #{test_encryption.class} - #{test_encryption}" if in_debug_mode
 
-          Rails.logger&.info "[Secvault] Early secrets loaded from #{secrets_config[:files].size} files" if debug_secvault?
+          Rails.logger&.info "[Secvault] Early secrets loaded from #{secrets_config[:files].size} files" if in_debug_mode
         rescue => e
           Rails.logger&.warn "[Secvault] Failed to load early secrets: #{e.message}"
         end
