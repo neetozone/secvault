@@ -5,8 +5,8 @@ require_relative "lib/secvault/version"
 Gem::Specification.new do |spec|
   spec.name = "secvault"
   spec.version = Secvault::VERSION
-  spec.authors = ["Unnikrishnan KP"]
-  spec.email = ["unnikrishnan.kp@bigbinary.com"]
+  spec.authors = ["Neeraj Singh"]
+  spec.email = ["neeraj@neeto.com"]
 
   spec.summary = "Simple Rails secrets.yml functionality for Rails 7.1+, 7.2+ and Rails 8.0+"
   spec.description = "Secvault restores the classic Rails secrets.yml functionality that was removed in Rails 7.2, using simple, plain YAML files for environment-specific secrets management. Compatible with Rails 7.1+, 7.2+ and 8.0+."
